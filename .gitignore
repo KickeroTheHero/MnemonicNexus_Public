@@ -4,7 +4,7 @@
 .env
 .env.local
 
-# Artifacts
+# Artifacts and generated files
 artifacts/
 baseline/
 
@@ -12,12 +12,28 @@ baseline/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
 
-# Editor
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Editor and IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+.directory
+
+# Docker
+.dockerignore

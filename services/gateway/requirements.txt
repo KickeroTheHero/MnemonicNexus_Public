@@ -1,0 +1,21 @@
+# MnemonicNexus V2 Gateway Dependencies
+# Phase A1: Basic infrastructure and health checks
+
+# FastAPI framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Database connectivity
+asyncpg==0.29.0
+
+# HTTP client for health checks
+httpx==0.25.2
+
+# Environment configuration
+python-dotenv==1.0.0
+
+# Phase A3: Event envelope validation
+python-dateutil==2.8.2
+
+# Phase A6: Monitoring and metrics
+prometheus-client==0.19.0

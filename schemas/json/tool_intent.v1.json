@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tool_intent.v1",
+  "description": "Tool intent specification with correlation tracking",
+  "type": "object",
+  "required": [
+    "intent_id",
+    "correlation_id",
+    "tool_name",
+    "parameters"
+  ],
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "description": "Unique intent identifier"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUIDv4 for end-to-end tracing"
+    },
+    "tool_name": {
+      "type": "string",
+      "description": "Name of the tool to invoke"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Tool-specific parameters"
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 30000,
+      "description": "Tool timeout in milliseconds"
+    },
+    "row_cap": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000,
+      "description": "Maximum number of result rows"
+    }
+  },
+  "additionalProperties": true
+}

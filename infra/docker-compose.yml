@@ -1,0 +1,204 @@
+services:
+  postgres:
+    image: nexus/postgres-age:pg16
+    container_name: nexus-postgres
+    environment:
+      POSTGRES_DB: nexus
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  gateway:
+    build:
+      context: ..
+      dockerfile: services/gateway/Dockerfile
+    container_name: nexus-gateway
+    ports:
+      - "8081:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      GRAPH_ADAPTER: age
+      LOG_LEVEL: INFO
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  publisher:
+    build: ../services/publisher
+    container_name: nexus-publisher
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8000"  # Publisher health/metrics
+    environment:
+      CDC_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      CDC_POLL_INTERVAL_MS: 100
+      CDC_BATCH_SIZE: 50
+      CDC_PROJECTOR_TIMEOUT_MS: 5000
+      CDC_PUBLISHER_ID: cdc-publisher
+      CDC_PROJECTOR_ENDPOINTS: http://projector-rel:8000,http://projector-graph:8000,http://projector-sem:8000
+      LOG_LEVEL: DEBUG
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  projector-rel:
+    build:
+      context: ..
+      dockerfile: projectors/relational/Dockerfile
+    container_name: nexus-projector-rel
+    ports:
+      - "8083:8000"  # Relational projector
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  projector-graph:
+    build:
+      context: ..
+      dockerfile: projectors/graph/Dockerfile
+    container_name: nexus-projector-graph
+    ports:
+      - "8084:8000"  # Graph projector
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+      LOG_LEVEL: DEBUG
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  projector-sem:
+    build:
+      context: ..
+      dockerfile: projectors/semantic/Dockerfile
+    container_name: nexus-projector-sem
+    ports:
+      - "8085:8000"  # Semantic projector
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+      LOG_LEVEL: DEBUG
+      # LMStudio configuration (use host.docker.internal to access host services from container)
+      EMBEDDING_MODEL_TYPE: lmstudio
+      LMSTUDIO_ENDPOINT: http://host.docker.internal:1234/v1/embeddings
+      LMSTUDIO_MODEL: text-embedding-nomic-embed-text-v1.5
+      VECTOR_DIMENSIONS: 768
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  controller:
+    build:
+      context: ..
+      dockerfile: mnx/inference/moe_controller/Dockerfile
+    container_name: nexus-controller
+    ports:
+      - "8086:8000"  # MoE Controller HTTP interface
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    environment:
+      # Database connection for tool bus lens queries
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
+      
+      # LM Studio connection for structured output generation
+      LMSTUDIO_ENDPOINT: http://host.docker.internal:1234/v1/completions
+      LMSTUDIO_MODEL: lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF
+      LMSTUDIO_API_KEY: ""  # LM Studio typically doesn't require API key
+      
+      # Tool bus configuration
+      TOOL_TIMEOUT_MS: 8000
+      TOOL_ROW_CAP: 200
+      RAG_ENABLE: 0  # Peer calls disabled by default
+      WEB_SEARCH_ENGINE: duckduckgo
+      
+      # Controller service configuration
+      CONTROLLER_PORT: 8000
+      CONTROLLER_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+      
+      # Gateway integration for decision record emission  
+      GATEWAY_ENDPOINT: http://gateway:8000
+      GATEWAY_TIMEOUT_MS: 5000
+      
+      # Determinism and correlation
+      DECISION_SEED_OVERRIDE: ""  # Empty = use correlation_id for determinism
+      CORRELATION_ID_HEADER: "X-Correlation-ID"
+      
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    name: nexus_postgres_data
+
+networks:
+  nexus-network:
+    name: nexus-network
+    driver: bridge

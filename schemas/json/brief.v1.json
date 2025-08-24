@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "brief.v1",
+  "description": "Decision brief with correlation tracking",
+  "type": "object",
+  "required": [
+    "brief_id",
+    "correlation_id",
+    "summary",
+    "context"
+  ],
+  "properties": {
+    "brief_id": {
+      "type": "string",
+      "description": "Unique brief identifier"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUIDv4 for end-to-end tracing"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary of the decision context"
+    },
+    "context": {
+      "type": "object",
+      "description": "Contextual information for decision making"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "normal", "high", "critical"],
+      "default": "normal",
+      "description": "Decision priority level"
+    },
+    "constraints": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Constraints or limitations for the decision"
+    }
+  },
+  "additionalProperties": true
+}
