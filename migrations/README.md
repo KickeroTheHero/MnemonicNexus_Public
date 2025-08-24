@@ -1,37 +1,34 @@
-# MnemonicNexus V2 Database Migrations
+# MnemonicNexus Database Migrations
 
-**Phase A2: V2 Schema & Event Envelope Implementation**
+**Phase A2: Schema & Event Envelope Implementation**
 
-This directory contains the complete V2 database schema migrations for MnemonicNexus V2.
+This directory contains the complete database schema migrations for MnemonicNexus.
 
 ## Migration Files
 
 ### Core Infrastructure
-- **`v2_001_event_core.sql`** - Event log, branches, and core utilities
-- **`v2_002_outbox.sql`** - Transactional outbox pattern for reliable CDC
-- **`v2_005_watermarks.sql`** - Projector watermark tracking and determinism validation
+- **`001_event_core.sql`** - Event log, branches, and core utilities
+- **`002_outbox.sql`** - Transactional outbox pattern for reliable CDC
+- **`005_watermarks.sql`** - Projector watermark tracking and determinism validation
 
 ### Multi-Lens Architecture
-- **`v2_003_lens_foundation.sql`** - All lens schemas (relational, semantic, graph)
-- **`v2_004_age_setup.sql`** - Apache AGE graph extension integration
+- **`003_lens_foundation.sql`** - All lens schemas (relational, semantic, graph)
+- **`004_age_setup.sql`** - Apache AGE graph extension integration
 
 ## Quick Start
 
 ```bash
-# Start V2 infrastructure (PostgreSQL + pgvector)
-make v2-up
+# Start infrastructure (PostgreSQL + pgvector)
+cd infra
+docker-compose up -d
 
 # Run all migrations
-make v2-migrate-up
-
-# Check schema status
-make v2-migrate-status
+for file in ../migrations/*.sql; do
+  psql postgresql://postgres:postgres@localhost:5433/nexus -f "$file"
+done
 
 # Test schema functionality
-make v2-schema-test
-
-# Stop V2 stack
-make v2-down
+# Use individual migration test queries or golden tests
 ```
 
 ## Schema Overview
@@ -63,7 +60,7 @@ make v2-down
 
 ### Tenancy & Isolation
 - All tables include `(world_id, branch)` composite keys
-- Row Level Security (RLS) enabled for future multi-tenancy
+- Row Level Security (RLS) enabled for multi-tenancy
 - Complete isolation between worlds and branches
 
 ### Idempotency & Reliability
@@ -132,7 +129,7 @@ Migrations must be run in numerical order due to dependencies:
 
 ## Development Workflow
 
-Following the V2 DOCUMENT → IMPLEMENT → TEST discipline:
+Following the DOCUMENT → IMPLEMENT → TEST discipline:
 
 1. **DOCUMENTED** ✅ - Architecture specifications complete
 2. **IMPLEMENTED** ✅ - All migrations created and validated

@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "emo.base.v1",
+  "description": "Episodic Memory Object (EMO) base schema with identity, versioning, and lineage",
+  "type": "object",
+  "required": [
+    "emo_id",
+    "emo_type", 
+    "emo_version",
+    "tenant_id",
+    "world_id",
+    "branch",
+    "source",
+    "schema_version"
+  ],
+  "properties": {
+    "emo_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique EMO identifier (UUIDv4)"
+    },
+    "emo_type": {
+      "type": "string",
+      "enum": ["note", "fact", "doc", "artifact", "profile"],
+      "description": "EMO type classification"
+    },
+    "emo_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version number, starts at 1, increments on updates"
+    },
+    "tenant_id": {
+      "type": "string", 
+      "format": "uuid",
+      "description": "Tenant identifier for multi-tenancy"
+    },
+    "world_id": {
+      "type": "string",
+      "format": "uuid", 
+      "description": "World identifier for tenancy isolation"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch name for DVCS-like isolation"
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["user", "agent", "ingest"],
+          "description": "Source type of the EMO"
+        },
+        "uri": {
+          "type": "string",
+          "description": "Optional source URI for external references"
+        }
+      },
+      "description": "Source attribution for the EMO"
+    },
+    "mime_type": {
+      "type": "string",
+      "default": "text/markdown",
+      "description": "Content MIME type"
+    },
+    "content": {
+      "type": ["string", "null"],
+      "description": "EMO content, can be null for tombstones"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional array of string tags"
+    },
+    "parents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["emo_id", "rel"],
+        "properties": {
+          "emo_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parent EMO ID"
+          },
+          "rel": {
+            "type": "string",
+            "enum": ["derived", "supersedes", "merges"],
+            "description": "Relationship type to parent"
+          }
+        }
+      },
+      "description": "Lineage relationships to parent EMOs"
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "ref"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["uri", "emo"],
+            "description": "Link type"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Reference URI or EMO ID"
+          }
+        }
+      },
+      "description": "External or internal links"
+    },
+    "vector_meta": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "description": "Embedding model identifier"
+        },
+        "embed_dim": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Embedding vector dimension"
+        },
+        "model_version": {
+          "type": "string",
+          "description": "Model version string"
+        },
+        "template_id": {
+          "type": "string",
+          "description": "Optional template identifier"
+        }
+      },
+      "description": "Vector metadata for semantic operations"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "EMO schema version (always 1 for v1)"
+    }
+  },
+  "additionalProperties": false
+}

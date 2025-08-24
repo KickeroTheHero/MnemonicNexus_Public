@@ -131,15 +131,23 @@ class SemanticProjector(ProjectorSDK):
         self.logger.info(f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})")
 
         async with self.db_pool.acquire() as conn:
+            # Legacy note events
             if kind == "note.created":
                 await self._handle_note_created(conn, world_id, branch, payload)
             elif kind == "note.updated":
                 await self._handle_note_updated(conn, world_id, branch, payload)
             elif kind == "note.deleted":
                 await self._handle_note_deleted(conn, world_id, branch, payload)
+            # EMO events  
+            elif kind == "emo.created":
+                await self._handle_emo_created(conn, world_id, branch, payload)
+            elif kind == "emo.updated":
+                await self._handle_emo_updated(conn, world_id, branch, payload)
+            elif kind == "emo.deleted":
+                await self._handle_emo_deleted(conn, world_id, branch, payload)
             else:
-                # Semantic projector focuses on note content for embeddings
-                self.logger.debug(f"Skipping non-note event: {kind}")
+                # Semantic projector focuses on content with embeddings
+                self.logger.debug(f"Skipping non-content event: {kind}")
 
     async def _generate_embedding(self, text: str) -> List[float]:
         """Generate vector embedding for text"""
@@ -523,6 +531,110 @@ class SemanticProjector(ProjectorSDK):
 
         return " ".join(content_parts).strip()
 
+    async def _handle_emo_created(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.created event by creating EMO embedding"""
+        content = payload.get("content", "")
+        if not content:
+            self.logger.debug(f"Skipping EMO {payload['emo_id']} - no content to embed")
+            return
+
+        # Generate real embedding for the content
+        embedding_vector = await self._generate_embedding(content)
+        embedding_str = "[" + ",".join(str(x) for x in embedding_vector) + "]"
+
+        # Get model info for tracking
+        model_info = self._get_model_info()
+
+        metadata = {
+            "emo_id": payload["emo_id"],
+            "emo_type": payload["emo_type"],
+            "emo_version": payload["emo_version"],
+            "content": content,
+            "content_length": len(content),
+        }
+
+        await conn.execute(
+            """
+            INSERT INTO lens_emo.emo_embeddings (
+                emo_id, emo_version, world_id, branch, model_id, embed_dim, 
+                embedding_vector, model_version, created_at
+            ) VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, now())
+            ON CONFLICT (emo_id, emo_version, world_id, branch, model_id) DO NOTHING
+        """,
+            payload["emo_id"],
+            payload["emo_version"],
+            world_id,
+            branch,
+            model_info["name"],
+            len(embedding_vector),
+            embedding_str,
+            model_info["version"],
+        )
+
+        self.logger.info(
+            f"Created EMO embedding for {payload['emo_id']} v{payload['emo_version']} "
+            f"in {world_id}/{branch} with {len(embedding_vector)} dimensions"
+        )
+
+    async def _handle_emo_updated(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.updated event by updating EMO embedding"""
+        content = payload.get("content", "")
+        if not content:
+            self.logger.debug(f"Skipping EMO {payload['emo_id']} update - no content to embed")
+            return
+
+        # Generate new embedding for updated content
+        embedding_vector = await self._generate_embedding(content)
+        embedding_str = "[" + ",".join(str(x) for x in embedding_vector) + "]"
+
+        # Get model info for tracking
+        model_info = self._get_model_info()
+
+        await conn.execute(
+            """
+            INSERT INTO lens_emo.emo_embeddings (
+                emo_id, emo_version, world_id, branch, model_id, embed_dim, 
+                embedding_vector, model_version, created_at
+            ) VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, now())
+            ON CONFLICT (emo_id, emo_version, world_id, branch, model_id) DO UPDATE SET
+                embedding_vector = EXCLUDED.embedding_vector,
+                embed_dim = EXCLUDED.embed_dim,
+                created_at = EXCLUDED.created_at
+        """,
+            payload["emo_id"],
+            payload["emo_version"],
+            world_id,
+            branch,
+            model_info["name"],
+            len(embedding_vector),
+            embedding_str,
+            model_info["version"],
+        )
+
+        self.logger.info(
+            f"Updated EMO embedding for {payload['emo_id']} v{payload['emo_version']} in {world_id}/{branch}"
+        )
+
+    async def _handle_emo_deleted(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.deleted event by removing EMO embeddings"""
+        await conn.execute(
+            """
+            DELETE FROM lens_emo.emo_embeddings 
+            WHERE emo_id = $1::uuid AND world_id = $2::uuid AND branch = $3
+        """,
+            payload["emo_id"],
+            world_id,
+            branch,
+        )
+
+        self.logger.debug(f"Deleted EMO embeddings for {payload['emo_id']} from {world_id}/{branch}")
+
     async def _get_state_snapshot(
         self, conn: asyncpg.Connection, world_id: str, branch: str
     ) -> Dict[str, Any]:
@@ -549,10 +661,24 @@ class SemanticProjector(ProjectorSDK):
                     result[key] = value.isoformat()
             return result
 
+        # Get EMO embedding data for state snapshot
+        emo_embeddings = await conn.fetch(
+            """
+            SELECT emo_id, emo_version, model_id, embed_dim, model_version, created_at
+            FROM lens_emo.emo_embeddings
+            WHERE world_id = $1::uuid AND branch = $2
+            ORDER BY emo_id, emo_version
+        """,
+            world_id,
+            branch,
+        )
+
         return {
             "lens": "semantic",
             "world_id": world_id,
             "branch": branch,
             "embeddings": [serialize_record(emb) for emb in embeddings],
             "embedding_count": len(embeddings),
+            "emo_embeddings": [serialize_record(emb) for emb in emo_embeddings],
+            "emo_embedding_count": len(emo_embeddings),
         }

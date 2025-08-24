@@ -1,0 +1,29 @@
+{
+  "description": "Test fixture for EMO deletion (soft delete)",
+  "prerequisites": ["emo_create.json"],
+  "event": {
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main",
+    "kind": "emo.deleted",
+    "by": {
+      "agent": "test-agent",
+      "trace_id": "test-trace-004"
+    },
+    "payload": {
+      "emo_id": "123e4567-e89b-12d3-a456-426614174001",
+      "emo_version": 1,
+      "tenant_id": "550e8400-e29b-41d4-a716-446655440001",
+      "world_id": "550e8400-e29b-41d4-a716-446655440001",
+      "branch": "main",
+      "schema_version": 1
+    },
+    "occurred_at": "2025-01-01T10:15:00Z"
+  },
+  "expected_results": {
+    "emo_current_deleted": true,
+    "emo_history_preserved": true,
+    "embeddings_removed": true,
+    "graph_node_soft_deleted": true,
+    "search_excluded": true
+  }
+}

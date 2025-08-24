@@ -56,6 +56,8 @@ class GraphProjector(ProjectorSDK):
                 await self._handle_link_event(world_id, branch, kind, payload)
             elif kind.startswith("mention."):
                 await self._handle_mention_event(world_id, branch, kind, payload)
+            elif kind.startswith("emo."):
+                await self._handle_emo_event(world_id, branch, kind, payload)
             else:
                 self.logger.debug(f"Unhandled event kind: {kind}")
 
@@ -273,6 +275,144 @@ class GraphProjector(ProjectorSDK):
                     """
                 )
 
+    async def _handle_emo_event(
+        self, world_id: str, branch: str, kind: str, payload: Dict[str, Any]
+    ):
+        """Handle EMO events by creating/updating graph nodes and relationships"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                if kind == "emo.created":
+                    await self._handle_emo_created(conn, world_id, branch, payload)
+                elif kind == "emo.updated":
+                    await self._handle_emo_updated(conn, world_id, branch, payload)
+                elif kind == "emo.linked":
+                    await self._handle_emo_linked(conn, world_id, branch, payload)
+                elif kind == "emo.deleted":
+                    await self._handle_emo_deleted(conn, world_id, branch, payload)
+                else:
+                    self.logger.warning(f"Unknown EMO event kind: {kind}")
+        except Exception as e:
+            self.logger.error(f"Failed to handle EMO event {kind}: {e}")
+            raise
+
+    async def _handle_emo_created(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.created by adding EMO node and relationships"""
+        emo_id = payload["emo_id"]
+        emo_type = payload["emo_type"]
+        emo_version = payload["emo_version"]
+
+        # Create node properties
+        properties = {
+            "emo_version": emo_version,
+            "emo_type": emo_type,
+            "tenant_id": payload["tenant_id"],
+            "mime_type": payload.get("mime_type", "text/markdown"),
+            "tags": payload.get("tags", []),
+            "source_kind": payload["source"]["kind"],
+            "created_at": "now()",
+        }
+
+        # Add EMO node using graph functions
+        await conn.fetchval(
+            "SELECT lens_emo.add_emo_node($1::uuid, $2, $3::uuid, $4, $5::jsonb)",
+            world_id,
+            branch,
+            emo_id,
+            emo_type,
+            properties,
+        )
+
+        # Handle parent relationships
+        for parent in payload.get("parents", []):
+            await conn.fetchval(
+                "SELECT lens_emo.add_emo_relationship($1::uuid, $2, $3::uuid, $4::uuid, $5)",
+                world_id,
+                branch,
+                emo_id,
+                parent["emo_id"],
+                parent["rel"],
+            )
+
+        self.logger.debug(f"Created EMO graph node {emo_id} in {world_id}/{branch}")
+
+    async def _handle_emo_updated(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.updated by updating EMO node properties"""
+        emo_id = payload["emo_id"]
+        emo_type = payload["emo_type"]
+        emo_version = payload["emo_version"]
+
+        # Update node properties
+        properties = {
+            "emo_version": emo_version,
+            "emo_type": emo_type,
+            "tenant_id": payload["tenant_id"],
+            "mime_type": payload.get("mime_type", "text/markdown"),
+            "tags": payload.get("tags", []),
+            "updated_at": "now()",
+        }
+
+        # Update EMO node (this will merge/update existing node)
+        await conn.fetchval(
+            "SELECT lens_emo.add_emo_node($1::uuid, $2, $3::uuid, $4, $5::jsonb)",
+            world_id,
+            branch,
+            emo_id,
+            emo_type,
+            properties,
+        )
+
+        self.logger.debug(f"Updated EMO graph node {emo_id} to v{emo_version} in {world_id}/{branch}")
+
+    async def _handle_emo_linked(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.linked by adding/updating relationships"""
+        emo_id = payload["emo_id"]
+
+        # Handle parent relationships
+        for parent in payload.get("parents", []):
+            await conn.fetchval(
+                "SELECT lens_emo.add_emo_relationship($1::uuid, $2, $3::uuid, $4::uuid, $5)",
+                world_id,
+                branch,
+                emo_id,
+                parent["emo_id"],
+                parent["rel"],
+            )
+
+        # Handle EMO-to-EMO links
+        for link in payload.get("links", []):
+            if link["kind"] == "emo":
+                await conn.fetchval(
+                    "SELECT lens_emo.add_emo_relationship($1::uuid, $2, $3::uuid, $4::uuid, 'linked')",
+                    world_id,
+                    branch,
+                    emo_id,
+                    link["ref"],
+                )
+
+        self.logger.debug(f"Updated EMO links for {emo_id} in {world_id}/{branch}")
+
+    async def _handle_emo_deleted(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.deleted by soft-deleting EMO node"""
+        emo_id = payload["emo_id"]
+
+        # Soft delete EMO node
+        await conn.fetchval(
+            "SELECT lens_emo.remove_emo_node($1::uuid, $2, $3::uuid)",
+            world_id,
+            branch,
+            emo_id,
+        )
+
+        self.logger.debug(f"Soft deleted EMO graph node {emo_id} from {world_id}/{branch}")
+
     async def _get_state_snapshot(
         self, conn: asyncpg.Connection, world_id: str, branch: str
     ) -> Dict[str, Any]:
@@ -320,6 +460,22 @@ class GraphProjector(ProjectorSDK):
             node_count = edge_count = 0
             note_ids = []
         
+        # Get EMO graph statistics
+        try:
+            emo_stats_result = await conn.fetchrow(
+                "SELECT * FROM lens_emo.get_emo_graph_stats($1::uuid, $2)",
+                world_id,
+                branch,
+            )
+            emo_stats = {
+                "total_nodes": emo_stats_result["total_nodes"] if emo_stats_result else 0,
+                "active_nodes": emo_stats_result["active_nodes"] if emo_stats_result else 0,
+                "total_relationships": emo_stats_result["total_relationships"] if emo_stats_result else 0,
+            }
+        except Exception as e:
+            self.logger.warning(f"Failed to get EMO graph stats: {e}")
+            emo_stats = {"total_nodes": 0, "active_nodes": 0, "total_relationships": 0}
+
         return {
             "lens": "graph",
             "world_id": world_id,
@@ -328,4 +484,5 @@ class GraphProjector(ProjectorSDK):
             "node_count": node_count,
             "edge_count": edge_count,
             "note_ids": sorted(note_ids),  # Ensure deterministic ordering
+            "emo_graph_stats": emo_stats,
         }

@@ -1,6 +1,6 @@
--- MnemonicNexus V2 Schema Migration: Event Core
+-- MnemonicNexus Schema Migration: Event Core
 -- Phase A2: Core event storage with comprehensive tenancy and idempotency
--- File: v2_001_event_core.sql
+-- File: 001_event_core.sql
 -- Dependencies: PostgreSQL 16+, uuid-ossp, pgcrypto extensions
 
 -- =============================================================================
@@ -84,7 +84,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE OR REPLACE FUNCTION event_core.validate_envelope(envelope JSONB)
 RETURNS BOOLEAN AS $$
 BEGIN
-    -- Check required V2 fields
+    -- Check required envelope fields
     IF NOT (envelope ? 'world_id' AND envelope ? 'branch' AND envelope ? 'kind' AND envelope ? 'payload' AND envelope ? 'by') THEN
         RETURN FALSE;
     END IF;
@@ -109,15 +109,15 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- COMMENTS
 -- =============================================================================
 
-COMMENT ON SCHEMA event_core IS 'V2 Event Core: System of Record with comprehensive tenancy';
+COMMENT ON SCHEMA event_core IS 'Event Core: System of Record with comprehensive tenancy';
 COMMENT ON TABLE event_core.event_log IS 'Append-only event log with world_id tenancy and branch isolation';
 COMMENT ON TABLE event_core.branches IS 'Branch registry for DVCS-lite operations with metadata';
 
 COMMENT ON COLUMN event_core.event_log.global_seq IS 'Monotonic sequence for total event ordering';
-COMMENT ON COLUMN event_core.event_log.world_id IS 'Tenancy UUID - required in all V2 operations';
+COMMENT ON COLUMN event_core.event_log.world_id IS 'Tenancy UUID - required in all operations';
 COMMENT ON COLUMN event_core.event_log.branch IS 'Branch name for DVCS-lite isolation';
 COMMENT ON COLUMN event_core.event_log.event_id IS 'Unique event identifier for correlation';
-COMMENT ON COLUMN event_core.event_log.envelope IS 'Complete V2 event envelope with audit fields';
+COMMENT ON COLUMN event_core.event_log.envelope IS 'Complete event envelope with audit fields';
 COMMENT ON COLUMN event_core.event_log.payload_hash IS 'SHA-256 integrity hash of canonical envelope';
 COMMENT ON COLUMN event_core.event_log.idempotency_key IS 'Optional client idempotency key (from header)';
 
@@ -151,7 +151,7 @@ BEGIN
         RAISE EXCEPTION 'idempotency unique index creation failed';
     END IF;
     
-    RAISE NOTICE 'V2 Event Core schema migration completed successfully';
+    RAISE NOTICE 'Event Core schema migration completed successfully';
     RAISE NOTICE 'Tables created: event_log, branches';
     RAISE NOTICE 'Indexes created: idempotency, performance, tenant-scoped';
     RAISE NOTICE 'Functions created: compute_payload_hash, validate_envelope';

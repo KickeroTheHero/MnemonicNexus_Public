@@ -1,0 +1,50 @@
+{
+  "description": "Test fixture for EMO with lineage relationships (parent-child)",
+  "prerequisites": ["emo_create.json"],
+  "event": {
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main",
+    "kind": "emo.created",
+    "by": {
+      "agent": "test-agent",
+      "trace_id": "test-trace-003"
+    },
+    "payload": {
+      "emo_id": "123e4567-e89b-12d3-a456-426614174002",
+      "emo_type": "note",
+      "emo_version": 1,
+      "tenant_id": "550e8400-e29b-41d4-a716-446655440001",
+      "world_id": "550e8400-e29b-41d4-a716-446655440001",
+      "branch": "main",
+      "source": {
+        "kind": "agent",
+        "uri": "agent://summarizer-v1"
+      },
+      "mime_type": "text/markdown",
+      "content": "This EMO is derived from the original test EMO. It demonstrates lineage relationships.",
+      "tags": ["test", "fixture", "derived"],
+      "parents": [
+        {
+          "emo_id": "123e4567-e89b-12d3-a456-426614174001",
+          "rel": "derived"
+        }
+      ],
+      "links": [],
+      "vector_meta": {
+        "model_id": "text-embedding-nomic-embed-text-v1.5",
+        "embed_dim": 768,
+        "model_version": "1.5.0",
+        "template_id": "default"
+      },
+      "schema_version": 1
+    },
+    "occurred_at": "2025-01-01T10:10:00Z"
+  },
+  "expected_results": {
+    "emo_current_count": 2,
+    "emo_history_count": 3,
+    "parent_relationships": 1,
+    "graph_lineage_edges": 1,
+    "lineage_integrity": true
+  }
+}

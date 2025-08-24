@@ -1,0 +1,55 @@
+{
+  "description": "Test fixture for EMO update event with version increment",
+  "prerequisites": ["emo_create.json"],
+  "event": {
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main", 
+    "kind": "emo.updated",
+    "by": {
+      "agent": "test-agent",
+      "trace_id": "test-trace-002"
+    },
+    "payload": {
+      "emo_id": "123e4567-e89b-12d3-a456-426614174001",
+      "emo_type": "note",
+      "emo_version": 2,
+      "tenant_id": "550e8400-e29b-41d4-a716-446655440001",
+      "world_id": "550e8400-e29b-41d4-a716-446655440001",
+      "branch": "main",
+      "source": {
+        "kind": "user",
+        "uri": "user://alice@example.com"
+      },
+      "mime_type": "text/markdown",
+      "content": "This is the updated EMO content with new information for testing version increments.",
+      "tags": ["test", "fixture", "alpha", "updated"],
+      "parents": [],
+      "links": [
+        {
+          "kind": "uri", 
+          "ref": "https://example.com/test"
+        },
+        {
+          "kind": "uri",
+          "ref": "https://example.com/updated"
+        }
+      ],
+      "vector_meta": {
+        "model_id": "text-embedding-nomic-embed-text-v1.5",
+        "embed_dim": 768,
+        "model_version": "1.5.0",
+        "template_id": "default"
+      },
+      "schema_version": 1
+    },
+    "occurred_at": "2025-01-01T10:05:00Z"
+  },
+  "expected_results": {
+    "emo_current_count": 1,
+    "emo_current_version": 2,
+    "emo_history_count": 2,
+    "emo_links_count": 2,
+    "embedding_updated": true,
+    "graph_node_updated": true
+  }
+}

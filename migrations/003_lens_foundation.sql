@@ -1,7 +1,7 @@
--- MnemonicNexus V2 Schema Migration: Lens Foundation
+-- MnemonicNexus Schema Migration: Lens Foundation
 -- Phase A2: Multi-lens projection schemas with comprehensive tenancy
--- File: v2_003_lens_foundation.sql
--- Dependencies: v2_001_event_core.sql
+-- File: 003_lens_foundation.sql
+-- Dependencies: 001_event_core.sql
 
 -- =============================================================================
 -- RELATIONAL LENS (lens_rel)
@@ -360,7 +360,7 @@ BEGIN
         RAISE EXCEPTION 'find_similar_embeddings function creation failed';
     END IF;
     
-    RAISE NOTICE 'V2 Lens Foundation migration completed successfully';
+    RAISE NOTICE 'Lens Foundation migration completed successfully';
     RAISE NOTICE 'Schemas created: lens_rel, lens_sem, lens_graph';
     RAISE NOTICE 'Tables created: note, note_tag, link, embedding, projector_state, graph_metadata';
     RAISE NOTICE 'Materialized views: mv_note_enriched (MV discipline)';

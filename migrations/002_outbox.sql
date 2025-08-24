@@ -1,7 +1,7 @@
--- MnemonicNexus V2 Schema Migration: Transactional Outbox
+-- MnemonicNexus Schema Migration: Transactional Outbox
 -- Phase A2: Reliable CDC without external message broker
--- File: v2_002_outbox.sql
--- Dependencies: v2_001_event_core.sql
+-- File: 002_outbox.sql
+-- Dependencies: 001_event_core.sql
 
 -- =============================================================================
 -- TRANSACTIONAL OUTBOX PATTERN
@@ -276,7 +276,7 @@ BEGIN
         RAISE EXCEPTION 'insert_event_with_outbox function creation failed';
     END IF;
     
-    RAISE NOTICE 'V2 Transactional Outbox migration completed successfully';
+            RAISE NOTICE 'Transactional Outbox migration completed successfully';
     RAISE NOTICE 'Tables created: outbox, dead_letter_queue';
     RAISE NOTICE 'Functions created: insert_event_with_outbox, mark_published, mark_retry, move_to_dlq';
     RAISE NOTICE 'Monitoring: outbox_metrics view available';

@@ -31,6 +31,7 @@ class RelationalProjector(ProjectorSDK):
         self.logger.info(f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})")
 
         async with self.db_pool.acquire() as conn:
+            # Legacy note events
             if kind == "note.created":
                 await self._handle_note_created(conn, world_id, branch, payload)
             elif kind == "note.updated":
@@ -45,6 +46,15 @@ class RelationalProjector(ProjectorSDK):
                 await self._handle_link_added(conn, world_id, branch, payload)
             elif kind == "link.removed":
                 await self._handle_link_removed(conn, world_id, branch, payload)
+            # EMO events
+            elif kind == "emo.created":
+                await self._handle_emo_created(conn, world_id, branch, payload)
+            elif kind == "emo.updated":
+                await self._handle_emo_updated(conn, world_id, branch, payload)
+            elif kind == "emo.linked":
+                await self._handle_emo_linked(conn, world_id, branch, payload)
+            elif kind == "emo.deleted":
+                await self._handle_emo_deleted(conn, world_id, branch, payload)
             else:
                 self.logger.warning(f"Unknown event kind: {kind}")
 
@@ -214,6 +224,184 @@ class RelationalProjector(ProjectorSDK):
             f"Removed link {payload['src']} -> {payload['dst']} from {world_id}/{branch} (rows: {deleted_rows})"
         )
 
+    async def _handle_emo_created(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.created event idempotently"""
+        await conn.execute(
+            """
+            INSERT INTO lens_emo.emo_current (
+                emo_id, emo_type, emo_version, tenant_id, world_id, branch,
+                mime_type, content, tags, source_kind, source_uri, updated_at
+            ) VALUES (
+                $1::uuid, $2, $3, $4::uuid, $5::uuid, $6, 
+                $7, $8, $9, $10, $11, now()
+            )
+            ON CONFLICT (emo_id, world_id, branch) DO NOTHING
+        """,
+            payload["emo_id"],
+            payload["emo_type"],
+            payload["emo_version"],
+            payload["tenant_id"],
+            world_id,
+            branch,
+            payload.get("mime_type", "text/markdown"),
+            payload.get("content"),
+            payload.get("tags", []),
+            payload["source"]["kind"],
+            payload["source"].get("uri"),
+        )
+
+        # Handle version history
+        await conn.execute(
+            """
+            INSERT INTO lens_emo.emo_history (
+                emo_id, emo_version, world_id, branch, content_hash, updated_at
+            ) VALUES ($1::uuid, $2, $3::uuid, $4, $5, now())
+            ON CONFLICT (emo_id, emo_version, world_id, branch) DO NOTHING
+        """,
+            payload["emo_id"],
+            payload["emo_version"],
+            world_id,
+            branch,
+            self._compute_emo_content_hash(payload.get("content", "")),
+        )
+
+        # Handle links
+        await self._handle_emo_links(conn, world_id, branch, payload)
+
+        self.logger.debug(f"Created EMO {payload['emo_id']} v{payload['emo_version']} in {world_id}/{branch}")
+
+    async def _handle_emo_updated(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.updated event idempotently"""
+        updated_rows = await conn.execute(
+            """
+            UPDATE lens_emo.emo_current 
+            SET emo_version = $3, content = $4, tags = $5, mime_type = $6, updated_at = now()
+            WHERE emo_id = $1::uuid AND world_id = $2::uuid AND branch = $7
+        """,
+            payload["emo_id"],
+            world_id,
+            payload["emo_version"],
+            payload.get("content"),
+            payload.get("tags", []),
+            payload.get("mime_type", "text/markdown"),
+            branch,
+        )
+
+        # Add to version history
+        await conn.execute(
+            """
+            INSERT INTO lens_emo.emo_history (
+                emo_id, emo_version, world_id, branch, content_hash, updated_at
+            ) VALUES ($1::uuid, $2, $3::uuid, $4, $5, now())
+            ON CONFLICT (emo_id, emo_version, world_id, branch) DO NOTHING
+        """,
+            payload["emo_id"],
+            payload["emo_version"],
+            world_id,
+            branch,
+            self._compute_emo_content_hash(payload.get("content", "")),
+        )
+
+        # Handle updated links
+        await self._handle_emo_links(conn, world_id, branch, payload)
+
+        self.logger.debug(
+            f"Updated EMO {payload['emo_id']} to v{payload['emo_version']} in {world_id}/{branch} (rows: {updated_rows})"
+        )
+
+    async def _handle_emo_linked(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.linked event for lineage relationships"""
+        await self._handle_emo_links(conn, world_id, branch, payload)
+
+        self.logger.debug(f"Updated links for EMO {payload['emo_id']} in {world_id}/{branch}")
+
+    async def _handle_emo_deleted(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle emo.deleted event (soft delete)"""
+        await conn.execute(
+            """
+            UPDATE lens_emo.emo_current 
+            SET deleted = TRUE, updated_at = now()
+            WHERE emo_id = $1::uuid AND world_id = $2::uuid AND branch = $3
+        """,
+            payload["emo_id"],
+            world_id,
+            branch,
+        )
+
+        self.logger.debug(f"Soft deleted EMO {payload['emo_id']} from {world_id}/{branch}")
+
+    async def _handle_emo_links(
+        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+    ):
+        """Handle EMO links (parents and external links)"""
+        emo_id = payload["emo_id"]
+
+        # Clear existing links for this EMO
+        await conn.execute(
+            """
+            DELETE FROM lens_emo.emo_links 
+            WHERE emo_id = $1::uuid AND world_id = $2::uuid AND branch = $3
+        """,
+            emo_id,
+            world_id,
+            branch,
+        )
+
+        # Add parent relationships
+        for parent in payload.get("parents", []):
+            await conn.execute(
+                """
+                INSERT INTO lens_emo.emo_links (
+                    emo_id, world_id, branch, rel, target_emo_id, created_at
+                ) VALUES ($1::uuid, $2::uuid, $3, $4, $5::uuid, now())
+            """,
+                emo_id,
+                world_id,
+                branch,
+                parent["rel"],
+                parent["emo_id"],
+            )
+
+        # Add external links
+        for link in payload.get("links", []):
+            if link["kind"] == "emo":
+                await conn.execute(
+                    """
+                    INSERT INTO lens_emo.emo_links (
+                        emo_id, world_id, branch, rel, target_emo_id, created_at
+                    ) VALUES ($1::uuid, $2::uuid, $3, 'linked', $4::uuid, now())
+                """,
+                    emo_id,
+                    world_id,
+                    branch,
+                    link["ref"],
+                )
+            elif link["kind"] == "uri":
+                await conn.execute(
+                    """
+                    INSERT INTO lens_emo.emo_links (
+                        emo_id, world_id, branch, rel, target_uri, created_at
+                    ) VALUES ($1::uuid, $2::uuid, $3, 'linked', $4, now())
+                """,
+                    emo_id,
+                    world_id,
+                    branch,
+                    link["ref"],
+                )
+
+    def _compute_emo_content_hash(self, content: str) -> str:
+        """Compute SHA-256 hash of EMO content"""
+        import hashlib
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
     async def _get_state_snapshot(
         self, conn: asyncpg.Connection, world_id: str, branch: str
     ) -> Dict[str, Any]:
@@ -268,11 +456,24 @@ class RelationalProjector(ProjectorSDK):
                     result[key] = str(value)
             return result
 
+        # Get EMO data for state snapshot
+        emos = await conn.fetch(
+            """
+            SELECT emo_id, emo_type, emo_version, updated_at, deleted
+            FROM lens_emo.emo_current
+            WHERE world_id = $1::uuid AND branch = $2
+            ORDER BY emo_id
+        """,
+            world_id,
+            branch,
+        )
+
         return {
-            "lens": "relational",
+            "lens": "relational", 
             "world_id": world_id,
             "branch": branch,
             "notes": [serialize_record(note) for note in notes],
             "tags": [serialize_record(tag) for tag in tags],
             "links": [serialize_record(link) for link in links],
+            "emos": [serialize_record(emo) for emo in emos],
         }

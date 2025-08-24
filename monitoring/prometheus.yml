@@ -1,0 +1,61 @@
+# Prometheus configuration for MNX V2 EMO monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  # Gateway V2 metrics
+  - job_name: 'mnx-gateway-v2'
+    static_configs:
+      - targets: ['gateway-v2:8086']
+    scrape_interval: 10s
+    metrics_path: /metrics
+
+  # Projector metrics
+  - job_name: 'mnx-projector-relational'
+    static_configs:
+      - targets: ['projector-rel:8083']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  - job_name: 'mnx-projector-semantic'
+    static_configs:
+      - targets: ['projector-sem:8085']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  - job_name: 'mnx-projector-graph'
+    static_configs:
+      - targets: ['projector-graph:8084']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  - job_name: 'mnx-projector-translator'
+    static_configs:
+      - targets: ['projector-translator:8088']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Hybrid Search Service
+  - job_name: 'mnx-search-hybrid'
+    static_configs:
+      - targets: ['search-hybrid:8087']
+    scrape_interval: 10s
+    metrics_path: /metrics
+
+  # Publisher metrics
+  - job_name: 'mnx-publisher-v2'
+    static_configs:
+      - targets: ['publisher-v2:8081']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # PostgreSQL metrics (if postgres_exporter is available)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s

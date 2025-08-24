@@ -1,7 +1,7 @@
--- MnemonicNexus V2 Schema Migration: Projector Watermarks
+-- MnemonicNexus Schema Migration: Projector Watermarks
 -- Phase A2: Shared watermark tracking and deterministic replay
--- File: v2_005_watermarks.sql
--- Dependencies: v2_001_event_core.sql
+-- File: 005_watermarks.sql
+-- Dependencies: 001_event_core.sql
 
 -- =============================================================================
 -- PROJECTOR WATERMARK MANAGEMENT
@@ -436,7 +436,7 @@ BEGIN
     PERFORM * FROM event_core.projector_lag LIMIT 1;
     PERFORM * FROM event_core.determinism_summary LIMIT 1;
     
-    RAISE NOTICE 'V2 Projector Watermarks migration completed successfully';
+    RAISE NOTICE 'Projector Watermarks migration completed successfully';
     RAISE NOTICE 'Tables created: projector_watermarks, determinism_log';
     RAISE NOTICE 'Functions created: watermark management, determinism validation';
     RAISE NOTICE 'Monitoring views: projector_lag, determinism_summary';

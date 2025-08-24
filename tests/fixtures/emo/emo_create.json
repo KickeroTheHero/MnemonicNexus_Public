@@ -1,0 +1,49 @@
+{
+  "description": "Test fixture for EMO creation event",
+  "event": {
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main",
+    "kind": "emo.created",
+    "by": {
+      "agent": "test-agent",
+      "trace_id": "test-trace-001"
+    },
+    "payload": {
+      "emo_id": "123e4567-e89b-12d3-a456-426614174001",
+      "emo_type": "note",
+      "emo_version": 1,
+      "tenant_id": "550e8400-e29b-41d4-a716-446655440001",
+      "world_id": "550e8400-e29b-41d4-a716-446655440001", 
+      "branch": "main",
+      "source": {
+        "kind": "user",
+        "uri": "user://alice@example.com"
+      },
+      "mime_type": "text/markdown",
+      "content": "This is a test EMO with some content for embedding and search.",
+      "tags": ["test", "fixture", "alpha"],
+      "parents": [],
+      "links": [
+        {
+          "kind": "uri",
+          "ref": "https://example.com/test"
+        }
+      ],
+      "vector_meta": {
+        "model_id": "text-embedding-nomic-embed-text-v1.5",
+        "embed_dim": 768,
+        "model_version": "1.5.0",
+        "template_id": "default"
+      },
+      "schema_version": 1
+    },
+    "occurred_at": "2025-01-01T10:00:00Z"
+  },
+  "expected_results": {
+    "emo_current_count": 1,
+    "emo_history_count": 1,
+    "emo_links_count": 1,
+    "embedding_generated": true,
+    "graph_node_created": true
+  }
+}

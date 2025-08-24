@@ -1,0 +1,113 @@
+{
+  "description": "Test fixtures for hybrid search with different modes and expected stable ordering",
+  "setup": {
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main",
+    "test_emos": [
+      {
+        "emo_id": "emo-001",
+        "content": "Machine learning algorithms for natural language processing",
+        "emo_type": "doc",
+        "tags": ["ml", "nlp", "algorithms"]
+      },
+      {
+        "emo_id": "emo-002", 
+        "content": "Neural networks and deep learning fundamentals",
+        "emo_type": "note",
+        "tags": ["neural", "deep", "learning"]
+      },
+      {
+        "emo_id": "emo-003",
+        "content": "Data structures and algorithm analysis",
+        "emo_type": "fact",
+        "tags": ["data", "structures", "algorithms"]
+      }
+    ]
+  },
+  "test_cases": [
+    {
+      "name": "relational_only_search",
+      "query": {
+        "query": "machine learning algorithms",
+        "mode": "relational_only",
+        "k": 10,
+        "threshold": 0.5
+      },
+      "expected": {
+        "min_results": 1,
+        "rank_version": "v2.0-alpha",
+        "fusion_method": "single_source",
+        "tie_break_policy": "emo_id_asc",
+        "top_result_should_contain": "emo-001"
+      }
+    },
+    {
+      "name": "vector_only_search",
+      "query": {
+        "query": "neural networks deep learning",
+        "mode": "vector_only", 
+        "k": 10,
+        "threshold": 0.7
+      },
+      "expected": {
+        "min_results": 1,
+        "rank_version": "v2.0-alpha",
+        "fusion_method": "single_source",
+        "tie_break_policy": "emo_id_asc",
+        "top_result_should_contain": "emo-002"
+      }
+    },
+    {
+      "name": "hybrid_search",
+      "query": {
+        "query": "algorithm analysis",
+        "mode": "hybrid",
+        "k": 10,
+        "weights": {"relational": 0.3, "semantic": 0.7}
+      },
+      "expected": {
+        "min_results": 2,
+        "rank_version": "v2.0-alpha",
+        "fusion_method": "weighted_sum",
+        "tie_break_policy": "emo_id_asc",
+        "latency_p95_ms": 250
+      }
+    },
+    {
+      "name": "hybrid_graph_expansion",
+      "query": {
+        "query": "learning algorithms",
+        "mode": "hybrid+graph_expansion",
+        "k": 15
+      },
+      "expected": {
+        "min_results": 1,
+        "rank_version": "v2.0-alpha", 
+        "fusion_method": "weighted_sum",
+        "tie_break_policy": "emo_id_asc",
+        "contains_graph_results": true
+      }
+    }
+  ],
+  "performance_slos": {
+    "hybrid_p95_latency_ms": 250,
+    "hybrid_p99_latency_ms": 500,
+    "vector_p95_latency_ms": 1000
+  },
+  "determinism_tests": [
+    {
+      "description": "Same query should return identical results with stable ordering",
+      "query": {
+        "query": "test query for determinism",
+        "mode": "hybrid",
+        "k": 5
+      },
+      "repeat_count": 3,
+      "expected": {
+        "identical_results": true,
+        "stable_ranking": true,
+        "same_scores": true
+      }
+    }
+  ]
+}

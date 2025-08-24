@@ -1,7 +1,7 @@
--- MnemonicNexus V2 Schema Migration: AGE Extension Integration
+-- MnemonicNexus Schema Migration: AGE Extension Integration
 -- Phase A2: Apache AGE graph extension with world/branch isolation
--- File: v2_004_age_setup.sql
--- Dependencies: v2_003_lens_foundation.sql, PostgreSQL 16+, AGE extension
+-- File: 004_age_setup.sql
+-- Dependencies: 003_lens_foundation.sql, PostgreSQL 16+, AGE extension
 
 -- =============================================================================
 -- AGE EXTENSION SETUP
@@ -20,14 +20,14 @@ SET search_path = ag_catalog, "$user", public;
 -- AGE GRAPH MANAGEMENT
 -- =============================================================================
 
--- Function to create AGE graph following V2 naming convention
+-- Function to create AGE graph following MNX naming convention
 CREATE OR REPLACE FUNCTION lens_graph.create_age_graph(world_prefix TEXT, branch_name TEXT)
 RETURNS TEXT AS $$
 DECLARE
     graph_name TEXT;
     graph_exists BOOLEAN;
 BEGIN
-    -- Construct graph name following V2 convention: g_{world_prefix}_{branch}
+    -- Construct graph name following MNX convention: g_{world_prefix}_{branch}
     graph_name := 'g_' || world_prefix || '_' || regexp_replace(branch_name, '[^a-z0-9_]', '_', 'g');
     
     -- Validate graph name length (PostgreSQL identifier limit)
@@ -389,7 +389,7 @@ $$ LANGUAGE plpgsql;
 -- COMMENTS
 -- =============================================================================
 
-COMMENT ON FUNCTION lens_graph.create_age_graph IS 'Create AGE graph with V2 naming convention';
+COMMENT ON FUNCTION lens_graph.create_age_graph IS 'Create AGE graph with MNX naming convention';
 COMMENT ON FUNCTION lens_graph.ensure_graph_exists IS 'Ensure AGE graph exists for world/branch with metadata';
 COMMENT ON FUNCTION lens_graph.execute_cypher IS 'Execute Cypher query with world/branch isolation and logging';
 COMMENT ON FUNCTION lens_graph.test_age_integration IS 'Test basic AGE operations for validation';
@@ -432,7 +432,7 @@ BEGIN
     test_result := lens_graph.test_age_integration();
     
     IF (test_result->>'success')::boolean THEN
-        RAISE NOTICE 'V2 AGE Extension migration completed successfully';
+        RAISE NOTICE 'AGE Extension migration completed successfully';
         RAISE NOTICE 'AGE extension loaded and functional';
         RAISE NOTICE 'Graph management functions created and tested';
         RAISE NOTICE 'World/branch isolation implemented';
