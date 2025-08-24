@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MnemonicNexus V2 Event Envelope",
+  "description": "V2 event envelope with comprehensive tenancy and audit fields",
+  "type": "object",
+  "required": [
+    "world_id",
+    "branch", 
+    "kind",
+    "payload",
+    "by"
+  ],
+  "properties": {
+    "world_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tenancy key (required in V2)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch name for DVCS-lite isolation"
+    },
+    "kind": {
+      "type": "string",
+      "description": "Event type identifier (e.g., 'note.created')"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data"
+    },
+    "by": {
+      "type": "object",
+      "required": ["agent"],
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Agent identifier (e.g., 'beacon-archivist')"
+        }
+      },
+      "description": "Audit fields for traceability"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Event envelope version"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Client-supplied logical time (RFC3339)"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time", 
+      "description": "Server write time (RFC3339, server-assigned)"
+    },
+    "ts": {
+      "type": "string", 
+      "format": "date-time",
+      "description": "Legacy timestamp field (use occurred_at/received_at instead)"
+    },
+    "causation_id": {
+      "type": "string", 
+      "description": "Event causation chain identifier"
+    }
+  },
+  "additionalProperties": false
+}

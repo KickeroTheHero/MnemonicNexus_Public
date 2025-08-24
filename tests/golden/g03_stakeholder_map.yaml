@@ -1,0 +1,17 @@
+# Fields:
+# name: short id (kebab_case)
+# prompt: the user instruction to the MoE controller (concise, no "timelines")
+# sources: optional list of URLs (only when web use is expected)
+# expect:
+#   schema: one of [brief.v1]           # output contract to validate
+#   must_contain: [list of strings]     # substrings that must appear in output
+#   citations_required: true|false      # require citations block when web used
+#   seed: 12345                         # fixed RNG seed for determinism
+
+name: stakeholder_map
+prompt: "List top stakeholders with roles and propose edges; output an edge list and a brief rationale."
+expect:
+  schema: brief.v1
+  must_contain: ["Stakeholders", "Edges"]
+  citations_required: false
+  seed: 12345

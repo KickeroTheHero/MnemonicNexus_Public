@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "decision_record.v1",
+  "description": "S0 Migration: Decision record with tenancy, tracing, and determinism fields",
+  "type": "object",
+  "required": [
+    "id",
+    "timestamp",
+    "world_id",
+    "branch",
+    "correlation_id",
+    "controller_version",
+    "rng_seed",
+    "policy_version",
+    "prompt_version",
+    "rank_version",
+    "validation_failed",
+    "artifacts",
+    "hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique decision identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Decision timestamp (RFC3339)"
+    },
+    "world_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenancy key - identifies the world/tenant"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Branch name for DVCS-lite isolation"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUIDv4 for end-to-end tracing"
+    },
+    "controller_version": {
+      "type": "string",
+      "description": "Controller version used for this decision"
+    },
+    "rng_seed": {
+      "type": "integer",
+      "description": "Random seed for deterministic reproduction"
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Policy version used"
+    },
+    "prompt_version": {
+      "type": "string",
+      "description": "Prompt version used"
+    },
+    "rank_version": {
+      "type": ["string", "null"],
+      "description": "Ranking version - must be non-null when fusion is enabled"
+    },
+    "validation_failed": {
+      "type": "boolean",
+      "description": "Whether schema validation failed downstream but controller recovered/degraded"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"type": "object"},
+      "description": "Decision artifacts (tool outputs, briefs, etc.)"
+    },
+    "hash": {
+      "type": "string",
+      "description": "Deterministic hash of the decision (for replay verification)"
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"rank_version": {"const": null}}},
+      "then": {"properties": {"rank_version": {"default": null}}}
+    }
+  ],
+  "additionalProperties": true
+}

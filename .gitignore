@@ -1,0 +1,23 @@
+# S0 Minimal .gitignore
+
+# Environment files
+.env
+.env.local
+
+# Artifacts
+artifacts/
+baseline/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

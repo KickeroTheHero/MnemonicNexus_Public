@@ -1,0 +1,14 @@
+# S0 Test Allowlist - Keep these on main branch
+# PR-6 initial allowlist for offline testing
+
+# Core offline test suites (no network dependencies)
+tests/replay/         # Golden replay harness - S0 compliance validation
+tests/golden/         # Golden test YAML files - determinism validation
+
+# Future unit tests (to be added as needed)
+# tests/unit/schemas/   # Schema validation unit tests
+# tests/unit/controller/ # Controller logic unit tests  
+# tests/toolbus/offline/ # Tool bus offline behavior (timeouts/caps/degrade)
+
+# Integration tests remain on alpha/s0-migration branch
+# Network-dependent tests marked with @pytest.mark.network stay on migration branch

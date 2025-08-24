@@ -1,0 +1,17 @@
+# Golden Replay Test Requirements
+
+# Testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# YAML parsing for golden test files
+PyYAML>=6.0
+
+# JSON schema validation (should match controller requirements)
+jsonschema>=4.17.0
+
+# Async HTTP for testing
+aiohttp>=3.8.0
+
+# Database connectivity for testing
+asyncpg>=0.28.0
