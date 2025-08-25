@@ -31,14 +31,19 @@ class EventPersistence:
         # Enrich envelope with server fields
         enriched_envelope = envelope.dict()
         enriched_envelope["received_at"] = datetime.utcnow().isoformat() + "Z"
-        enriched_envelope["payload_hash"] = self._compute_payload_hash(enriched_envelope)
+        enriched_envelope["payload_hash"] = self._compute_payload_hash(
+            enriched_envelope
+        )
 
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 # Check idempotency if key provided
                 if headers["idempotency_key"]:
                     existing = await self._check_idempotency(
-                        conn, envelope.world_id, envelope.branch, headers["idempotency_key"]
+                        conn,
+                        envelope.world_id,
+                        envelope.branch,
+                        headers["idempotency_key"],
                     )
                     if existing:
                         raise ConflictError(
@@ -61,7 +66,9 @@ class EventPersistence:
                     envelope.kind,
                     json.dumps(enriched_envelope),
                     (
-                        datetime.fromisoformat(envelope.occurred_at.replace("Z", "+00:00"))
+                        datetime.fromisoformat(
+                            envelope.occurred_at.replace("Z", "+00:00")
+                        )
                         if envelope.occurred_at
                         else None
                     ),
@@ -195,14 +202,25 @@ class EventPersistence:
                 if projector not in projector_status:
                     projector_status[projector] = {
                         "latest_watermark": wm["watermark"],
-                        "lag": latest_seq - wm["watermark"] if latest_seq > wm["watermark"] else 0,
+                        "lag": (
+                            latest_seq - wm["watermark"]
+                            if latest_seq > wm["watermark"]
+                            else 0
+                        ),
                     }
                 else:
                     # Update if this watermark is newer
-                    if wm["watermark"] > projector_status[projector]["latest_watermark"]:
-                        projector_status[projector]["latest_watermark"] = wm["watermark"]
+                    if (
+                        wm["watermark"]
+                        > projector_status[projector]["latest_watermark"]
+                    ):
+                        projector_status[projector]["latest_watermark"] = wm[
+                            "watermark"
+                        ]
                         projector_status[projector]["lag"] = (
-                            latest_seq - wm["watermark"] if latest_seq > wm["watermark"] else 0
+                            latest_seq - wm["watermark"]
+                            if latest_seq > wm["watermark"]
+                            else 0
                         )
 
             return {"latest_global_seq": latest_seq, "projectors": projector_status}

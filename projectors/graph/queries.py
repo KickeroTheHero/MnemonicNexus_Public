@@ -27,7 +27,9 @@ class GraphQueries:
             {"note_id": note_id, "world_id": world_id, "branch": branch},
         )
 
-    async def find_notes_by_tag(self, world_id: str, branch: str, tag: str) -> List[Dict[str, Any]]:
+    async def find_notes_by_tag(
+        self, world_id: str, branch: str, tag: str
+    ) -> List[Dict[str, Any]]:
         query = f"""
             MATCH (n:Note {{world_id: $world_id, branch: $branch}})
             MATCH (n)-[:TAGGED {{world_id: $world_id, branch: $branch}}]->(

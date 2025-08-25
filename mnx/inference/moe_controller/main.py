@@ -22,7 +22,9 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from mnx.inference.moe_controller.client_lmstudio import LMStudioClient  # noqa: E402
 from mnx.inference.moe_controller.controller import MoEController  # noqa: E402
-from mnx.inference.moe_controller.event_emitter import DecisionEventEmitter  # noqa: E402
+from mnx.inference.moe_controller.event_emitter import (
+    DecisionEventEmitter,
+)  # noqa: E402
 from mnx.inference.moe_controller.tool_bus import ToolBus  # noqa: E402
 from mnx.inference.moe_controller.validators import JSONValidator  # noqa: E402
 
@@ -49,7 +51,9 @@ app = FastAPI(
 # Add CORS middleware for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if os.getenv("ENVIRONMENT", "production") != "production" else [],
+    allow_origins=(
+        ["*"] if os.getenv("ENVIRONMENT", "production") != "production" else []
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -100,8 +104,12 @@ async def startup_event():
             logger.info("⚠️ Monitoring disabled - ServiceMonitoring not available")
 
         # Initialize LM Studio client
-        lm_studio_endpoint = os.getenv("LMSTUDIO_ENDPOINT", "http://localhost:1234/v1/completions")
-        lm_model = os.getenv("LMSTUDIO_MODEL", "lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF")
+        lm_studio_endpoint = os.getenv(
+            "LMSTUDIO_ENDPOINT", "http://localhost:1234/v1/completions"
+        )
+        lm_model = os.getenv(
+            "LMSTUDIO_MODEL", "lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF"
+        )
 
         lm_client = LMStudioClient(endpoint=lm_studio_endpoint, model=lm_model)
         logger.info(f"✅ LM Studio client configured: {lm_studio_endpoint}")
@@ -168,7 +176,9 @@ async def health_check():
         "timestamp": time.time(),
         "components": {
             "controller": controller is not None,
-            "tool_bus": controller.tool_bus._db_pool_initialized if controller else False,
+            "tool_bus": (
+                controller.tool_bus._db_pool_initialized if controller else False
+            ),
             "lm_client": controller.lm_client is not None if controller else False,
         },
     }
@@ -188,7 +198,8 @@ async def metrics_endpoint():
 
     # Return Prometheus metrics format
     return Response(
-        content=monitoring.generate_prometheus_output(), media_type="text/plain; charset=utf-8"
+        content=monitoring.generate_prometheus_output(),
+        media_type="text/plain; charset=utf-8",
     )
 
 
@@ -209,7 +220,9 @@ async def create_decision(request: DecisionRequest):
         # Generate correlation ID if not provided
         correlation_id = request.correlation_id or f"ctrl-{int(time.time()*1000)}"
 
-        logger.info(f"🎯 Decision request: {request.query[:100]}... (correlation: {correlation_id})")
+        logger.info(
+            f"🎯 Decision request: {request.query[:100]}... (correlation: {correlation_id})"
+        )
 
         # Execute decision through controller
         decision_record = await controller.make_decision(
@@ -224,10 +237,16 @@ async def create_decision(request: DecisionRequest):
 
         # Record metrics
         if monitoring:
-            outcome = "validation_failed" if decision_record.get("validation_failed") else "ok"
+            outcome = (
+                "validation_failed"
+                if decision_record.get("validation_failed")
+                else "ok"
+            )
             monitoring.record_controller_decision(outcome, duration_ms)
 
-        logger.info(f"✅ Decision completed in {duration_ms:.1f}ms (correlation: {correlation_id})")
+        logger.info(
+            f"✅ Decision completed in {duration_ms:.1f}ms (correlation: {correlation_id})"
+        )
 
         return DecisionResponse(
             success=True,
@@ -244,7 +263,9 @@ async def create_decision(request: DecisionRequest):
         if monitoring:
             monitoring.record_controller_decision("error", duration_ms)
 
-        logger.error(f"❌ Decision failed: {e} (correlation: {correlation_id or 'unknown'})")
+        logger.error(
+            f"❌ Decision failed: {e} (correlation: {correlation_id or 'unknown'})"
+        )
 
         return DecisionResponse(
             success=False,
@@ -278,7 +299,8 @@ async def service_status():
             "rag_enabled": os.getenv("RAG_ENABLE", "0") == "1",
         },
         "tool_bus_config": controller.tool_bus.get_config() if controller else None,
-        "uptime_seconds": time.time() - (getattr(controller, "_start_time", time.time())),
+        "uptime_seconds": time.time()
+        - (getattr(controller, "_start_time", time.time())),
     }
 
 

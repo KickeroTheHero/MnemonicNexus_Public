@@ -25,7 +25,9 @@ class ProjectorMetrics:
         )
 
         self.watermark_position = Gauge(
-            "projector_watermark", "Current watermark position", ["projector", "world_id", "branch"]
+            "projector_watermark",
+            "Current watermark position",
+            ["projector", "world_id", "branch"],
         )
 
         self.state_hash = Gauge(
@@ -40,13 +42,17 @@ class ProjectorMetrics:
             ["projector", "kind"],
         )
 
-    def record_event_processed(self, world_id: str, branch: str, kind: str, duration: float):
+    def record_event_processed(
+        self, world_id: str, branch: str, kind: str, duration: float
+    ):
         """Record successful event processing"""
         self.events_processed.labels(
             projector=self.projector_name, world_id=world_id, branch=branch, kind=kind
         ).inc()
 
-        self.processing_duration.labels(projector=self.projector_name, kind=kind).observe(duration)
+        self.processing_duration.labels(
+            projector=self.projector_name, kind=kind
+        ).observe(duration)
 
     async def update_lag_metrics(self, db_pool: asyncpg.Pool):
         """Periodically update lag and watermark metrics"""

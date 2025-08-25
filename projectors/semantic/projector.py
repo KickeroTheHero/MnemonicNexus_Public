@@ -52,7 +52,9 @@ class SemanticProjector(ProjectorSDK):
         # Initialize query interface after database pool is ready
         if self.db_pool:
             self.query_interface = SemanticQueryInterface(self.db_pool)
-            self.logger.info("✅ SemanticQueryInterface initialized with caching enabled")
+            self.logger.info(
+                "✅ SemanticQueryInterface initialized with caching enabled"
+            )
 
     async def shutdown(self):
         """Clean shutdown including HTTP client"""
@@ -76,20 +78,28 @@ class SemanticProjector(ProjectorSDK):
 
         if model_type == "lmstudio":
             if httpx is None:
-                self.logger.error("httpx library not installed. Install with: pip install httpx")
+                self.logger.error(
+                    "httpx library not installed. Install with: pip install httpx"
+                )
                 return
 
-            endpoint = self.config.get("lmstudio_endpoint", "http://localhost:1234/v1/embeddings")
+            endpoint = self.config.get(
+                "lmstudio_endpoint", "http://localhost:1234/v1/embeddings"
+            )
             model_name = self.config.get("lmstudio_model_name", "qwen3-embedding-0.6b")
             timeout = self.config.get("lmstudio_timeout", 30.0)
 
             self.http_client = httpx.AsyncClient(timeout=timeout)
             self.embedding_model = "lmstudio"  # Marker for LMStudio usage
-            self.logger.info(f"Initialized LMStudio client: {endpoint} with model {model_name}")
+            self.logger.info(
+                f"Initialized LMStudio client: {endpoint} with model {model_name}"
+            )
 
         elif model_type == "openai":
             if openai is None:
-                raise ImportError("OpenAI library not installed. Install with: pip install openai")
+                raise ImportError(
+                    "OpenAI library not installed. Install with: pip install openai"
+                )
 
             api_key = self.config.get("openai_api_key")
             if not api_key:
@@ -108,12 +118,16 @@ class SemanticProjector(ProjectorSDK):
                 )
                 return
 
-            model_name = self.config.get("sentence_transformer_model", "all-MiniLM-L6-v2")
+            model_name = self.config.get(
+                "sentence_transformer_model", "all-MiniLM-L6-v2"
+            )
             try:
                 self.embedding_model = SentenceTransformer(model_name)
                 self.logger.info(f"Loaded sentence transformer model: {model_name}")
             except Exception as e:
-                self.logger.error(f"Failed to load sentence transformer model {model_name}: {e}")
+                self.logger.error(
+                    f"Failed to load sentence transformer model {model_name}: {e}"
+                )
                 self.logger.warning("Falling back to placeholder embeddings")
                 return
         else:
@@ -128,7 +142,9 @@ class SemanticProjector(ProjectorSDK):
         world_id = envelope["world_id"]
         branch = envelope["branch"]
 
-        self.logger.info(f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})")
+        self.logger.info(
+            f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})"
+        )
 
         async with self.db_pool.acquire() as conn:
             # Legacy note events
@@ -138,7 +154,7 @@ class SemanticProjector(ProjectorSDK):
                 await self._handle_note_updated(conn, world_id, branch, payload)
             elif kind == "note.deleted":
                 await self._handle_note_deleted(conn, world_id, branch, payload)
-            # EMO events  
+            # EMO events
             elif kind == "emo.created":
                 await self._handle_emo_created(conn, world_id, branch, payload)
             elif kind == "emo.updated":
@@ -158,12 +174,18 @@ class SemanticProjector(ProjectorSDK):
 
         model_type = self.config.get("embedding_model_type", "sentence-transformer")
 
-        if model_type == "lmstudio" and self.embedding_model == "lmstudio" and self.http_client:
+        if (
+            model_type == "lmstudio"
+            and self.embedding_model == "lmstudio"
+            and self.http_client
+        ):
             try:
                 endpoint = self.config.get(
                     "lmstudio_endpoint", "http://localhost:1234/v1/embeddings"
                 )
-                model_name = self.config.get("lmstudio_model_name", "qwen3-embedding-0.6b")
+                model_name = self.config.get(
+                    "lmstudio_model_name", "qwen3-embedding-0.6b"
+                )
 
                 payload = {"model": model_name, "input": text}
 
@@ -196,7 +218,8 @@ class SemanticProjector(ProjectorSDK):
         elif model_type == "openai" and self.embedding_model == "openai":
             try:
                 response = await openai.Embedding.acreate(
-                    model=self.config.get("openai_model", "text-embedding-ada-002"), input=text
+                    model=self.config.get("openai_model", "text-embedding-ada-002"),
+                    input=text,
                 )
                 return response["data"][0]["embedding"]
             except Exception as e:
@@ -213,7 +236,9 @@ class SemanticProjector(ProjectorSDK):
                 )
                 return embedding
             except Exception as e:
-                self.logger.error(f"Sentence transformer embedding generation failed: {e}")
+                self.logger.error(
+                    f"Sentence transformer embedding generation failed: {e}"
+                )
                 # Fall back to zero vector
                 dimensions = self.config.get("vector_dimensions", 384)
                 return [0.0] * dimensions
@@ -224,7 +249,11 @@ class SemanticProjector(ProjectorSDK):
             return [0.0] * dimensions
 
     async def _handle_note_created(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.created event by creating semantic entry with real embeddings"""
         content = self._extract_content(payload)
@@ -270,7 +299,11 @@ class SemanticProjector(ProjectorSDK):
         )
 
     async def _handle_note_updated(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.updated event by regenerating semantic entry"""
         # Delete existing embeddings for this note
@@ -310,7 +343,9 @@ class SemanticProjector(ProjectorSDK):
         elif model_type == "sentence-transformer" and isinstance(
             self.embedding_model, SentenceTransformer
         ):
-            model_name = self.config.get("sentence_transformer_model", "all-MiniLM-L6-v2")
+            model_name = self.config.get(
+                "sentence_transformer_model", "all-MiniLM-L6-v2"
+            )
             return {"name": model_name, "version": "sentence-transformers"}
 
         return {"name": "placeholder", "version": "0.1"}
@@ -323,7 +358,11 @@ class SemanticProjector(ProjectorSDK):
         # Add semantic similarity search endpoints
         @self.app.get("/search")
         async def semantic_search(
-            query: str, world_id: str, branch: str = "main", threshold: float = 0.7, limit: int = 10
+            query: str,
+            world_id: str,
+            branch: str = "main",
+            threshold: float = 0.7,
+            limit: int = 10,
         ):
             """Semantic similarity search endpoint"""
             if not self.query_interface:
@@ -411,13 +450,15 @@ class SemanticProjector(ProjectorSDK):
                     query_embeddings.append(embedding)
 
                 # Perform optimized batch search
-                results, metrics = await self.query_interface.optimized_batch_similarity_search(
-                    world_id=world_id,
-                    branch=branch,
-                    query_embeddings=query_embeddings,
-                    similarity_threshold=threshold,
-                    limit_per_query=limit,
-                    deduplicate_results=deduplicate,
+                results, metrics = (
+                    await self.query_interface.optimized_batch_similarity_search(
+                        world_id=world_id,
+                        branch=branch,
+                        query_embeddings=query_embeddings,
+                        similarity_threshold=threshold,
+                        limit_per_query=limit,
+                        deduplicate_results=deduplicate,
+                    )
                 )
 
                 return {
@@ -500,7 +541,11 @@ class SemanticProjector(ProjectorSDK):
                 return {"error": str(e)}
 
     async def _handle_note_deleted(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.deleted event by removing semantic entry"""
         await conn.execute(
@@ -532,7 +577,11 @@ class SemanticProjector(ProjectorSDK):
         return " ".join(content_parts).strip()
 
     async def _handle_emo_created(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.created event by creating EMO embedding"""
         content = payload.get("content", "")
@@ -579,12 +628,18 @@ class SemanticProjector(ProjectorSDK):
         )
 
     async def _handle_emo_updated(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.updated event by updating EMO embedding"""
         content = payload.get("content", "")
         if not content:
-            self.logger.debug(f"Skipping EMO {payload['emo_id']} update - no content to embed")
+            self.logger.debug(
+                f"Skipping EMO {payload['emo_id']} update - no content to embed"
+            )
             return
 
         # Generate new embedding for updated content
@@ -620,7 +675,11 @@ class SemanticProjector(ProjectorSDK):
         )
 
     async def _handle_emo_deleted(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.deleted event by removing EMO embeddings"""
         await conn.execute(
@@ -633,7 +692,9 @@ class SemanticProjector(ProjectorSDK):
             branch,
         )
 
-        self.logger.debug(f"Deleted EMO embeddings for {payload['emo_id']} from {world_id}/{branch}")
+        self.logger.debug(
+            f"Deleted EMO embeddings for {payload['emo_id']} from {world_id}/{branch}"
+        )
 
     async def _get_state_snapshot(
         self, conn: asyncpg.Connection, world_id: str, branch: str

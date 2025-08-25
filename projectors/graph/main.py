@@ -16,7 +16,8 @@ from sdk.config import ProjectorConfig
 async def main():
     """Main entry point for graph projector"""
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     logger = logging.getLogger("GraphProjectorMain")

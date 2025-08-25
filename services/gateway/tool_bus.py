@@ -190,7 +190,11 @@ class ToolBus:
                 "reason": "Tool failure - returning empty results",
             },
             "analyze": {
-                "analysis": {"sentiment": "neutral", "confidence": 0.0, "categories": []},
+                "analysis": {
+                    "sentiment": "neutral",
+                    "confidence": 0.0,
+                    "categories": [],
+                },
                 "degraded": True,
                 "reason": "Tool failure - returning neutral analysis",
             },

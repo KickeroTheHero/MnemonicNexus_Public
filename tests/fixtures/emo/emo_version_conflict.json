@@ -1,0 +1,60 @@
+{
+  "description": "Test fixture for version conflict validation - concurrent updates",
+  "world_id": "550e8400-e29b-41d4-a716-446655440001",
+  "branch": "main", 
+  "scenario": "concurrent_update",
+  "events": [
+    {
+      "name": "initial_creation",
+      "kind": "emo.created",
+      "event_id": "version-test-create-001",
+      "payload": {
+        "emo_id": "version-test-emo-001",
+        "emo_type": "note",
+        "emo_version": 1,
+        "content": "Initial content",
+        "idempotency_key": "version-test-emo-001:1:created",
+        "change_id": "chg-version-create-001"
+      }
+    },
+    {
+      "name": "update_attempt_a",
+      "kind": "emo.updated", 
+      "event_id": "version-test-update-a",
+      "payload": {
+        "emo_id": "version-test-emo-001",
+        "emo_version": 2,
+        "content": "Updated by client A",
+        "content_diff": {"op": "replace", "path": "/content", "value": "Updated by client A"},
+        "rationale": "Client A update",
+        "idempotency_key": "version-test-emo-001:2:updated",
+        "change_id": "chg-version-update-a"
+      }
+    },
+    {
+      "name": "update_attempt_b", 
+      "kind": "emo.updated",
+      "event_id": "version-test-update-b",
+      "payload": {
+        "emo_id": "version-test-emo-001", 
+        "emo_version": 2,
+        "content": "Updated by client B",
+        "content_diff": {"op": "replace", "path": "/content", "value": "Updated by client B"},
+        "rationale": "Client B update",
+        "idempotency_key": "version-test-emo-001:2:updated-conflict",
+        "change_id": "chg-version-update-b"
+      }
+    }
+  ],
+  "expected_behavior": "First update succeeds (version 2), second update fails due to version conflict",
+  "test_assertions": [
+    "Creation event creates EMO at version 1",
+    "First update succeeds, increments to version 2", 
+    "Second update with same target version fails",
+    "Final EMO version is 2 (from first update)",
+    "Content matches first update, not second",
+    "Version conflict logged in emo_history",
+    "Proper error response returned to client B"
+  ]
+}
+

@@ -16,7 +16,9 @@ import requests
 # Add parent directories to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +106,9 @@ class ProjectorIntegrationTest:
                     )
                 """
                 )
-                assert watermarks_exists, "Missing event_core.projector_watermarks table"
+                assert (
+                    watermarks_exists
+                ), "Missing event_core.projector_watermarks table"
 
                 logger.info(f"✅ Database schema validated. Tables: {table_names}")
         finally:
@@ -240,7 +244,9 @@ class ProjectorIntegrationTest:
                 )
 
                 # Should still have original title, not "Updated Title"
-                assert note["title"] == "Test Note for Phase A5", "Note was unexpectedly updated"
+                assert (
+                    note["title"] == "Test Note for Phase A5"
+                ), "Note was unexpectedly updated"
 
                 logger.info(f"✅ Idempotency preserved: {note['title']}")
         finally:
@@ -262,10 +268,14 @@ class ProjectorIntegrationTest:
 
         try:
             # Compute state hash
-            hash1 = await projector.compute_state_hash(self.test_world_id, self.test_branch)
+            hash1 = await projector.compute_state_hash(
+                self.test_world_id, self.test_branch
+            )
 
             # Compute again - should be identical
-            hash2 = await projector.compute_state_hash(self.test_world_id, self.test_branch)
+            hash2 = await projector.compute_state_hash(
+                self.test_world_id, self.test_branch
+            )
 
             assert hash1 == hash2, "State hash is not deterministic"
             assert len(hash1) == 64, "State hash should be SHA-256 (64 hex chars)"
@@ -288,7 +298,9 @@ class ProjectorIntegrationTest:
         assert metrics["watermark_count"] >= 1
         assert len(metrics["watermarks"]) >= 1
 
-        logger.info(f"✅ Metrics endpoint working: {metrics['watermark_count']} watermarks")
+        logger.info(
+            f"✅ Metrics endpoint working: {metrics['watermark_count']} watermarks"
+        )
 
 
 async def main():

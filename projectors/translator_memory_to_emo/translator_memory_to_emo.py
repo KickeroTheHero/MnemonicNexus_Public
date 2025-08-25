@@ -27,7 +27,7 @@ from sdk.projector import ProjectorSDK
 class MemoryToEMOTranslator(ProjectorSDK):
     """
     Translator shim that converts memory.* events to emo.* events
-    
+
     Responsibilities:
     - On memory.item.upserted: emit emo.created (new) or emo.updated (existing)
     - On memory.item.deleted: emit emo.deleted
@@ -95,7 +95,9 @@ class MemoryToEMOTranslator(ProjectorSDK):
         emo_id = self._derive_emo_id(memory_id)
 
         # Check if this EMO already exists
-        current_version = await self._get_emo_current_version(conn, emo_id, world_id, branch)
+        current_version = await self._get_emo_current_version(
+            conn, emo_id, world_id, branch
+        )
         is_new_emo = current_version == 0
 
         # Increment version for updates
@@ -111,7 +113,9 @@ class MemoryToEMOTranslator(ProjectorSDK):
                 "emo_id": str(emo_id),
                 "emo_type": self._infer_emo_type(payload),
                 "emo_version": new_version,
-                "tenant_id": envelope.get("tenant_id", world_id),  # fallback to world_id
+                "tenant_id": envelope.get(
+                    "tenant_id", world_id
+                ),  # fallback to world_id
                 "world_id": world_id,
                 "branch": branch,
                 "source": self._extract_source_info(envelope, payload),
@@ -155,7 +159,9 @@ class MemoryToEMOTranslator(ProjectorSDK):
         emo_id = self._derive_emo_id(memory_id)
 
         # Get current version (if exists)
-        current_version = await self._get_emo_current_version(conn, emo_id, world_id, branch)
+        current_version = await self._get_emo_current_version(
+            conn, emo_id, world_id, branch
+        )
         if current_version == 0:
             self.logger.warning(f"Attempting to delete non-existent EMO {emo_id}")
             return
@@ -181,7 +187,9 @@ class MemoryToEMOTranslator(ProjectorSDK):
         # Emit the deletion event
         await self._emit_emo_event(conn, emo_envelope)
 
-        self.logger.info(f"Translated memory.item.deleted -> emo.deleted for EMO {emo_id}")
+        self.logger.info(
+            f"Translated memory.item.deleted -> emo.deleted for EMO {emo_id}"
+        )
 
     async def _translate_memory_embed(
         self,
@@ -400,18 +408,21 @@ class MemoryToEMOTranslator(ProjectorSDK):
 # Main execution
 if __name__ == "__main__":
     import asyncio
-    
+
     config = {
-        "database_url": os.getenv("PROJECTOR_DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/nexus"),
+        "database_url": os.getenv(
+            "PROJECTOR_DATABASE_URL",
+            "postgresql://postgres:postgres@postgres:5432/nexus",
+        ),
         "projector_name": os.getenv("PROJECTOR_NAME", "translator_memory_to_emo"),
         "projector_lens": os.getenv("PROJECTOR_LENS", "translator"),
         "projector_port": int(os.getenv("PROJECTOR_PORT", "8000")),
         "projector_host": os.getenv("PROJECTOR_HOST", "0.0.0.0"),
         "log_level": os.getenv("LOG_LEVEL", "INFO"),
     }
-    
+
     translator = MemoryToEMOTranslator(config)
-    
+
     async def run_translator():
         try:
             await translator.start_polling()
@@ -422,5 +433,5 @@ if __name__ == "__main__":
             print(f"Translator error: {e}")
             await translator.shutdown()
             raise
-    
+
     asyncio.run(run_translator())

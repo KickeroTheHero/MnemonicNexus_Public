@@ -1,5 +1,5 @@
 """
-MnemonicNexus V2 Gateway - Phase A6 Complete Implementation
+MnemonicNexus Gateway - Phase A6 Complete Implementation
 
 FastAPI Gateway with comprehensive idempotency, validation, and 409 handling.
 Full event ingestion pipeline with proper error handling and monitoring.
@@ -18,16 +18,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Import Phase A6 modules
+from auth import (
+    APIKeyAuth,
+    AuthenticationMiddleware,
+    RateLimiter,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from models import EventAccepted, EventEnvelope, EventListResponse, HealthResponse
 from monitoring import GatewayMetrics
 from persistence import EventPersistence
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from validation import ConflictError, EventValidationMiddleware, RequestValidator, ValidationError
+from validation import (
+    ConflictError,
+    EventValidationMiddleware,
+    RequestValidator,
+    ValidationError,
+)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="MnemonicNexus V2 Gateway",
-    description="V2 Gateway API with tenancy and idempotency",
+    title="MnemonicNexus Gateway",
+    description="Gateway API with tenancy and idempotency",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -41,6 +53,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Production security middleware
+auth_manager = APIKeyAuth()
+rate_limiter = RateLimiter(max_requests=1000, window_seconds=60)  # 1000 req/min
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+app.add_middleware(AuthenticationMiddleware, auth_manager=auth_manager)
 
 # Global state
 db_pool: asyncpg.Pool = None
@@ -69,7 +89,7 @@ async def startup_event():
     global db_pool, event_persistence
 
     database_url = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:postgres@postgres-v2:5432/nexus_v2"
+        "DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/nexus"
     )
 
     try:
@@ -78,7 +98,7 @@ async def startup_event():
         )
         event_persistence = EventPersistence(db_pool)
 
-        print("✅ Gateway V2 started successfully")
+        print("✅ Gateway started successfully")
         print(f"✅ Database pool created: {database_url}")
     except Exception as e:
         print(f"❌ Gateway startup failed: {e}")
@@ -119,7 +139,11 @@ async def health_check():
             "status": "healthy",
             "version": "2.0.0",
             "components": {
-                "database": {"status": "up", "version": version.split(" ")[1], "latency_ms": 2},
+                "database": {
+                    "status": "up",
+                    "version": version.split(" ")[1],
+                    "latency_ms": 2,
+                },
                 "vector_extension": {"status": "healthy"},
                 "age_extension": {"status": "healthy"},
                 "projector_lag": lag_data,
@@ -151,16 +175,22 @@ async def create_event(
             metrics.record_event_size(len(envelope_json.encode("utf-8")))
 
             # Validate headers
-            headers = EventValidationMiddleware.validate_headers(idempotency_key, correlation_id)
+            headers = EventValidationMiddleware.validate_headers(
+                idempotency_key, correlation_id
+            )
 
             # Validate envelope structure
-            validated_envelope = EventValidationMiddleware.validate_envelope(envelope.dict())
+            validated_envelope = EventValidationMiddleware.validate_envelope(
+                envelope.dict()
+            )
 
             # Store event with idempotency checking
             result = await event_persistence.store_event(validated_envelope, headers)
 
             # Record metrics
-            metrics.record_event_created(envelope.world_id, envelope.branch, envelope.kind)
+            metrics.record_event_created(
+                envelope.world_id, envelope.branch, envelope.kind
+            )
 
             tracker.set_status_code(201)
             return EventAccepted(
@@ -220,7 +250,9 @@ async def list_events(
         try:
             # Validate parameters
             RequestValidator.validate_world_id(world_id)
-            params = RequestValidator.validate_pagination_params(after_global_seq, limit)
+            params = RequestValidator.validate_pagination_params(
+                after_global_seq, limit
+            )
 
             events = await event_persistence.list_events(
                 world_id, branch, kind, params["after_global_seq"], params["limit"]
@@ -277,7 +309,7 @@ async def get_metrics():
 async def root():
     """Root endpoint with service information"""
     return {
-        "service": "MnemonicNexus V2 Gateway",
+        "service": "MnemonicNexus Gateway",
         "version": "2.0.0",
         "phase": "A6 - Gateway 409 Handling",
         "status": "ready",

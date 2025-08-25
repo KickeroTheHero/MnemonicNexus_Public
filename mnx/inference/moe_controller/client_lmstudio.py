@@ -87,7 +87,9 @@ class LMStudioClient:
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
-                        raise LMStudioError(f"LM Studio API error {response.status}: {error_text}")
+                        raise LMStudioError(
+                            f"LM Studio API error {response.status}: {error_text}"
+                        )
 
                     result = await response.json()
 
@@ -105,7 +107,9 @@ class LMStudioClient:
                         parsed_json = json.loads(content)
                         return parsed_json
                     except json.JSONDecodeError as e:
-                        raise LMStudioError(f"Invalid JSON returned: {e}\nContent: {content}")
+                        raise LMStudioError(
+                            f"Invalid JSON returned: {e}\nContent: {content}"
+                        )
 
         except asyncio.TimeoutError:
             raise LMStudioError(f"Request timed out after {self.timeout} seconds")
@@ -122,13 +126,16 @@ class LMStudioClient:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.base_url}/v1/models", timeout=aiohttp.ClientTimeout(total=5.0)
+                    f"{self.base_url}/v1/models",
+                    timeout=aiohttp.ClientTimeout(total=5.0),
                 ) as response:
                     if response.status != 200:
                         return False
 
                     models = await response.json()
-                    model_ids = [model.get("id", "") for model in models.get("data", [])]
+                    model_ids = [
+                        model.get("id", "") for model in models.get("data", [])
+                    ]
 
                     # Check if our target model is available
                     return self.model_id in model_ids
@@ -138,4 +145,8 @@ class LMStudioClient:
 
     def get_config(self) -> dict[str, Any]:
         """Get current client configuration"""
-        return {"base_url": self.base_url, "model_id": self.model_id, "timeout": self.timeout}
+        return {
+            "base_url": self.base_url,
+            "model_id": self.model_id,
+            "timeout": self.timeout,
+        }

@@ -82,7 +82,9 @@ class MoEController:
                 validation_failed = True
 
             # Step 2: Execute tools
-            tool_results = await self.tool_bus.execute_tools(tool_intent, world_id, branch)
+            tool_results = await self.tool_bus.execute_tools(
+                tool_intent, world_id, branch
+            )
 
             # Step 3: Generate brief
             tool_results_data = [r.data for r in tool_results]
@@ -164,7 +166,10 @@ class MoEController:
             }
 
     async def _generate_brief(
-        self, query: str, tool_intent: dict[str, Any], tool_results: list[dict[str, Any]]
+        self,
+        query: str,
+        tool_intent: dict[str, Any],
+        tool_results: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """
         Generate brief.v1 from query and tool results
@@ -204,7 +209,9 @@ class MoEController:
                 "context": {"query": query, "degraded": True, "error": str(e)},
             }
 
-    async def _load_prompt(self, prompt_type: str, query: str, context: dict | None = None) -> str:
+    async def _load_prompt(
+        self, prompt_type: str, query: str, context: dict | None = None
+    ) -> str:
         """
         Load prompt template for given type
 
@@ -347,7 +354,9 @@ Output format:
         }
 
         # Overall status
-        component_statuses = [c.get("status", "unknown") for c in health["components"].values()]
+        component_statuses = [
+            c.get("status", "unknown") for c in health["components"].values()
+        ]
         if any(status == "unhealthy" for status in component_statuses):
             health["status"] = "unhealthy"
         elif any(status == "degraded" for status in component_statuses):

@@ -41,14 +41,18 @@ class QueryPerformanceMetrics:
 class SemanticQueryInterface:
     """Interface for semantic similarity queries using pgvector"""
 
-    def __init__(self, db_pool: asyncpg.Pool, enable_caching: bool = True, cache_ttl: int = 300):
+    def __init__(
+        self, db_pool: asyncpg.Pool, enable_caching: bool = True, cache_ttl: int = 300
+    ):
         self.pool = db_pool
         self.logger = logging.getLogger(__name__)
 
         # Simple in-memory cache for frequent queries
         self.enable_caching = enable_caching
         self.cache_ttl = cache_ttl  # 5 minutes default
-        self._query_cache: Dict[str, Tuple[Any, float]] = {}  # query_hash -> (result, timestamp)
+        self._query_cache: Dict[str, Tuple[Any, float]] = (
+            {}
+        )  # query_hash -> (result, timestamp)
 
         # Performance metrics
         self.query_metrics: Dict[str, List[QueryPerformanceMetrics]] = defaultdict(list)
@@ -69,7 +73,9 @@ class SemanticQueryInterface:
         """Find notes semantically similar to query text"""
 
         if not embedding_generator:
-            raise ValueError("embedding_generator function is required for similarity search")
+            raise ValueError(
+                "embedding_generator function is required for similarity search"
+            )
 
         try:
             # Generate embedding for query
@@ -188,13 +194,17 @@ class SemanticQueryInterface:
                     # Parse JSON metadata
                     if isinstance(embedding_data["metadata"], str):
                         try:
-                            embedding_data["metadata"] = json.loads(embedding_data["metadata"])
+                            embedding_data["metadata"] = json.loads(
+                                embedding_data["metadata"]
+                            )
                         except json.JSONDecodeError:
                             embedding_data["metadata"] = {}
 
                     # Convert datetime to string
                     if embedding_data["created_at"]:
-                        embedding_data["created_at"] = embedding_data["created_at"].isoformat()
+                        embedding_data["created_at"] = embedding_data[
+                            "created_at"
+                        ].isoformat()
 
                     similar_embeddings.append(embedding_data)
 
@@ -258,7 +268,11 @@ class SemanticQueryInterface:
             raise
 
     async def get_embedding_by_id(
-        self, world_id: str, branch: str, entity_id: str, model_name: Optional[str] = None
+        self,
+        world_id: str,
+        branch: str,
+        entity_id: str,
+        model_name: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Get specific embedding by entity ID"""
         try:
@@ -300,13 +314,17 @@ class SemanticQueryInterface:
                 # Parse JSON metadata
                 if isinstance(embedding_data["metadata"], str):
                     try:
-                        embedding_data["metadata"] = json.loads(embedding_data["metadata"])
+                        embedding_data["metadata"] = json.loads(
+                            embedding_data["metadata"]
+                        )
                     except json.JSONDecodeError:
                         embedding_data["metadata"] = {}
 
                 # Convert datetime to string
                 if embedding_data["created_at"]:
-                    embedding_data["created_at"] = embedding_data["created_at"].isoformat()
+                    embedding_data["created_at"] = embedding_data[
+                        "created_at"
+                    ].isoformat()
 
                 return embedding_data
 
@@ -342,7 +360,9 @@ class SemanticQueryInterface:
 
             # Simple cache cleanup - remove oldest entries if cache grows too large
             if len(self._query_cache) > 1000:
-                oldest_key = min(self._query_cache.keys(), key=lambda k: self._query_cache[k][1])
+                oldest_key = min(
+                    self._query_cache.keys(), key=lambda k: self._query_cache[k][1]
+                )
                 del self._query_cache[oldest_key]
 
     async def optimized_batch_similarity_search(
@@ -360,7 +380,9 @@ class SemanticQueryInterface:
 
         try:
             # Convert all embeddings to pgvector format
-            vector_strings = ["[" + ",".join(str(x) for x in emb) + "]" for emb in query_embeddings]
+            vector_strings = [
+                "[" + ",".join(str(x) for x in emb) + "]" for emb in query_embeddings
+            ]
 
             async with self.pool.acquire() as conn:
                 # Single query to search against all embeddings simultaneously
@@ -411,7 +433,10 @@ class SemanticQueryInterface:
 
                     # Deduplicate across queries if requested
                     if deduplicate_results and seen_entities is not None:
-                        entity_key = (result_dict["entity_id"], result_dict["model_name"])
+                        entity_key = (
+                            result_dict["entity_id"],
+                            result_dict["model_name"],
+                        )
                         if entity_key in seen_entities:
                             continue
                         seen_entities.add(entity_key)
@@ -419,13 +444,17 @@ class SemanticQueryInterface:
                     # Parse metadata
                     if isinstance(result_dict["metadata"], str):
                         try:
-                            result_dict["metadata"] = json.loads(result_dict["metadata"])
+                            result_dict["metadata"] = json.loads(
+                                result_dict["metadata"]
+                            )
                         except json.JSONDecodeError:
                             result_dict["metadata"] = {}
 
                     # Convert datetime
                     if result_dict["created_at"]:
-                        result_dict["created_at"] = result_dict["created_at"].isoformat()
+                        result_dict["created_at"] = result_dict[
+                            "created_at"
+                        ].isoformat()
 
                     # Remove query_index from final result
                     query_idx = result_dict.pop("query_index")
@@ -502,7 +531,8 @@ class SemanticQueryInterface:
                 "max_query_time_ms": max(query_times),
                 "avg_results_per_query": sum(result_counts) / len(result_counts),
                 "total_results": sum(result_counts),
-                "cache_hit_rate": sum(1 for m in metrics_list if m.cache_hit) / len(metrics_list),
+                "cache_hit_rate": sum(1 for m in metrics_list if m.cache_hit)
+                / len(metrics_list),
             }
 
         return analytics
@@ -592,7 +622,9 @@ class SemanticQueryInterface:
                             }
                         )
 
-                self.logger.info(f"Found {len(clusters)} semantic clusters in {world_id}/{branch}")
+                self.logger.info(
+                    f"Found {len(clusters)} semantic clusters in {world_id}/{branch}"
+                )
                 return clusters
 
         except Exception as e:
@@ -611,7 +643,9 @@ class SemanticQueryInterface:
             "timestamp": time.time(),
             "cache_enabled": self.enable_caching,
             "cache_size": len(self._query_cache),
-            "total_queries_processed": sum(len(metrics) for metrics in self.query_metrics.values()),
+            "total_queries_processed": sum(
+                len(metrics) for metrics in self.query_metrics.values()
+            ),
         }
 
         try:

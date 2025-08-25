@@ -33,7 +33,8 @@ class GatewayMetrics:
         )
 
         self.internal_errors = Counter(
-            "gateway_internal_errors_total", "Total internal server errors (500 responses)"
+            "gateway_internal_errors_total",
+            "Total internal server errors (500 responses)",
         )
 
         # Request performance metrics
@@ -41,11 +42,26 @@ class GatewayMetrics:
             "gateway_request_duration_seconds",
             "Request processing duration",
             ["endpoint", "status_code"],
-            buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+            buckets=[
+                0.001,
+                0.005,
+                0.01,
+                0.025,
+                0.05,
+                0.1,
+                0.25,
+                0.5,
+                1.0,
+                2.5,
+                5.0,
+                10.0,
+            ],
         )
 
         self.active_requests = Gauge(
-            "gateway_active_requests", "Number of requests currently being processed", ["endpoint"]
+            "gateway_active_requests",
+            "Number of requests currently being processed",
+            ["endpoint"],
         )
 
         # Database metrics
@@ -111,7 +127,9 @@ class GatewayMetrics:
         self.service_info = Info("gateway_service_info", "Gateway service information")
 
         # Initialize service info
-        self.service_info.info({"version": "2.0.0-s0", "phase": "S0", "service": "gateway-v2"})
+        self.service_info.info(
+            {"version": "2.0.0-s0", "phase": "S0", "service": "gateway-v2"}
+        )
 
     def record_event_created(self, world_id: str, branch: str, kind: str):
         """Record successful event creation"""
@@ -131,9 +149,9 @@ class GatewayMetrics:
 
     def record_request_duration(self, endpoint: str, status_code: int, duration: float):
         """Record request processing duration"""
-        self.request_duration.labels(endpoint=endpoint, status_code=str(status_code)).observe(
-            duration
-        )
+        self.request_duration.labels(
+            endpoint=endpoint, status_code=str(status_code)
+        ).observe(duration)
 
     def record_event_size(self, size_bytes: int):
         """Record event envelope size"""
@@ -192,7 +210,9 @@ class RequestTracker:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.start_time:
             duration = time.time() - self.start_time
-            self.metrics.record_request_duration(self.endpoint, self.status_code, duration)
+            self.metrics.record_request_duration(
+                self.endpoint, self.status_code, duration
+            )
         self.metrics.active_requests.labels(endpoint=self.endpoint).dec()
 
     def set_status_code(self, status_code: int):

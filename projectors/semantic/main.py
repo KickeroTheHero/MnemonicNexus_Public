@@ -13,7 +13,8 @@ from projector import SemanticProjector
 async def main():
     """Main entry point for semantic projector"""
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     logger = logging.getLogger("SemanticProjectorMain")

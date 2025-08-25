@@ -85,8 +85,12 @@ class ProjectorSDK(ABC):
             try:
                 # Verify payload integrity if hash provided
                 if event_data.payload_hash:
-                    if not self._verify_payload_hash(event_data.envelope, event_data.payload_hash):
-                        raise HTTPException(status_code=400, detail="Payload hash mismatch")
+                    if not self._verify_payload_hash(
+                        event_data.envelope, event_data.payload_hash
+                    ):
+                        raise HTTPException(
+                            status_code=400, detail="Payload hash mismatch"
+                        )
 
                 # Set tenant context for RLS enforcement
                 world_id = UUID(event_data.envelope["world_id"])
@@ -110,16 +114,20 @@ class ProjectorSDK(ABC):
                     event_data.envelope["world_id"],
                     event_data.envelope["branch"],
                     event_data.envelope["kind"],
-                    duration
+                    duration,
                 )
 
                 self.logger.debug(
                     f"Processed event {event_data.global_seq} for {event_data.envelope['world_id']}/{event_data.envelope['branch']}"
                 )
-                return EventResponse(status="processed", global_seq=event_data.global_seq)
+                return EventResponse(
+                    status="processed", global_seq=event_data.global_seq
+                )
 
             except Exception as e:
-                self.logger.error(f"Failed to process event {event_data.global_seq}: {e}")
+                self.logger.error(
+                    f"Failed to process event {event_data.global_seq}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/health")
@@ -144,7 +152,7 @@ class ProjectorSDK(ABC):
     async def start(self):
         """Start projector HTTP server and background tasks"""
         self.running = True
-        
+
         # Initialize database pool with AGE extension loading
         async def init_connection(conn):
             """Initialize each database connection with AGE extension"""
@@ -153,14 +161,17 @@ class ProjectorSDK(ABC):
                 await conn.execute("SET search_path TO ag_catalog, public")
             except Exception as e:
                 # Log but don't fail - not all projectors need AGE
-                self.logger.debug(f"AGE extension initialization failed (non-graph projector?): {e}")
-        
+                self.logger.debug(
+                    f"AGE extension initialization failed (non-graph projector?): {e}"
+                )
+
         self.db_pool = await asyncpg.create_pool(
-            self.config["database_url"],
-            init=init_connection
+            self.config["database_url"], init=init_connection
         )
 
-        self.logger.info(f"Starting projector {self.name} on port {self.config.get('port', 8000)}")
+        self.logger.info(
+            f"Starting projector {self.name} on port {self.config.get('port', 8000)}"
+        )
 
         # Start background monitoring tasks
         background_tasks = [
@@ -186,14 +197,20 @@ class ProjectorSDK(ABC):
             if self.db_pool:
                 await self.db_pool.close()
 
-    def _verify_payload_hash(self, envelope: Dict[str, Any], expected_hash: str) -> bool:
+    def _verify_payload_hash(
+        self, envelope: Dict[str, Any], expected_hash: str
+    ) -> bool:
         """Verify payload integrity against expected hash"""
         # Remove server-added fields for canonical hashing
         canonical_envelope = {
-            k: v for k, v in envelope.items() if k not in ["received_at", "payload_hash"]
+            k: v
+            for k, v in envelope.items()
+            if k not in ["received_at", "payload_hash"]
         }
 
-        canonical_json = json.dumps(canonical_envelope, sort_keys=True, separators=(",", ":"))
+        canonical_json = json.dumps(
+            canonical_envelope, sort_keys=True, separators=(",", ":")
+        )
         computed_hash = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
         return computed_hash == expected_hash
 
@@ -241,7 +258,9 @@ class ProjectorSDK(ABC):
                 "lens": self.lens,
                 "watermark_count": len(watermarks),
                 "watermarks": [dict(w) for w in watermarks],
-                "last_activity": watermarks[0]["updated_at"].isoformat() if watermarks else None,
+                "last_activity": (
+                    watermarks[0]["updated_at"].isoformat() if watermarks else None
+                ),
             }
 
     async def _state_hash_monitor(self):

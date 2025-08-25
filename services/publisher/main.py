@@ -57,12 +57,16 @@ class CDCPublisher:
 
     async def _process_batch(self, batch: List[Dict[str, Any]]) -> None:
         publish_tasks = [asyncio.create_task(self._publish_event(ev)) for ev in batch]
-        results: List[object] = list(await asyncio.gather(*publish_tasks, return_exceptions=True))
+        results: List[object] = list(
+            await asyncio.gather(*publish_tasks, return_exceptions=True)
+        )
         await self._update_publish_status(batch, results)
 
     async def _publish_event(self, event: Dict[str, Any]) -> bool:
         success = True
-        for endpoint in self._get_projector_endpoints(event["world_id"], event["branch"]):
+        for endpoint in self._get_projector_endpoints(
+            event["world_id"], event["branch"]
+        ):
             try:
                 await self._send_to_projector(event, endpoint)
                 self.metrics.events_published.labels(
@@ -85,8 +89,9 @@ class CDCPublisher:
         envelope = event["envelope"]
         if isinstance(envelope, str):
             import json
+
             envelope = json.loads(envelope)
-            
+
         payload = {
             "global_seq": event["global_seq"],
             "event_id": str(event["event_id"]),
@@ -113,7 +118,9 @@ class CDCPublisher:
         async with self.pool.acquire() as conn:
             for event, result in zip(batch, results):
                 if result is True:
-                    await conn.execute("SELECT event_core.mark_published($1)", event["global_seq"])
+                    await conn.execute(
+                        "SELECT event_core.mark_published($1)", event["global_seq"]
+                    )
                 else:
                     err = str(result)
                     ok = await conn.fetchval(
@@ -130,7 +137,9 @@ class CDCPublisher:
                             self.config.publisher_id,
                         )
 
-    def _get_projector_endpoints(self, world_id: Any, branch: str) -> List[str]:  # noqa: ARG002
+    def _get_projector_endpoints(
+        self, world_id: Any, branch: str
+    ) -> List[str]:  # noqa: ARG002
         return self.config.projector_endpoints
 
 

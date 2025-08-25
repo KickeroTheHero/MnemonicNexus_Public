@@ -157,7 +157,9 @@ class DecisionEventEmitter:
                         return True
                     else:
                         error_text = await response.text()
-                        raise EmissionError(f"Gateway error {response.status}: {error_text}")
+                        raise EmissionError(
+                            f"Gateway error {response.status}: {error_text}"
+                        )
 
         except aiohttp.ClientError as e:
             raise EmissionError(f"HTTP client error: {e}")

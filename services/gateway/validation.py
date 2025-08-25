@@ -72,7 +72,9 @@ class EventValidationMiddleware:
 
         # Validate branch name format
         if not re.match(r"^[a-zA-Z0-9_-]+$", envelope.branch):
-            raise ValidationError("Branch name must be alphanumeric with hyphens/underscores")
+            raise ValidationError(
+                "Branch name must be alphanumeric with hyphens/underscores"
+            )
 
         # Validate event kind format
         if "." not in envelope.kind or len(envelope.kind.split(".")) != 2:
@@ -105,7 +107,9 @@ class RequestValidator:
     """Additional request-level validation"""
 
     @staticmethod
-    def validate_pagination_params(after_global_seq: Optional[int], limit: int) -> Dict[str, Any]:
+    def validate_pagination_params(
+        after_global_seq: Optional[int], limit: int
+    ) -> Dict[str, Any]:
         """Validate pagination parameters"""
 
         if limit <= 0:

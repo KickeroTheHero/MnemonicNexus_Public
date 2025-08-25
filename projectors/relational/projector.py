@@ -28,7 +28,9 @@ class RelationalProjector(ProjectorSDK):
         world_id = envelope["world_id"]
         branch = envelope["branch"]
 
-        self.logger.info(f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})")
+        self.logger.info(
+            f"Processing {kind} event for {world_id}/{branch} (seq: {global_seq})"
+        )
 
         async with self.db_pool.acquire() as conn:
             # Legacy note events
@@ -59,7 +61,11 @@ class RelationalProjector(ProjectorSDK):
                 self.logger.warning(f"Unknown event kind: {kind}")
 
     async def _handle_note_created(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.created event idempotently"""
         await conn.execute(
@@ -80,7 +86,11 @@ class RelationalProjector(ProjectorSDK):
         self.logger.debug(f"Created note {payload['id']} in {world_id}/{branch}")
 
     async def _handle_note_updated(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.updated event idempotently"""
         updated_rows = await conn.execute(
@@ -102,7 +112,11 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_note_deleted(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle note.deleted event idempotently"""
         # Soft delete - could also be hard delete depending on requirements
@@ -143,7 +157,11 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_tag_added(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle tag.added event idempotently"""
         await conn.execute(
@@ -165,7 +183,11 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_tag_removed(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle tag.removed event idempotently"""
         deleted_rows = await conn.execute(
@@ -184,7 +206,11 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_link_added(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle link.added event idempotently"""
         await conn.execute(
@@ -202,10 +228,16 @@ class RelationalProjector(ProjectorSDK):
             payload.get("created_at"),
         )
 
-        self.logger.debug(f"Added link {payload['src']} -> {payload['dst']} in {world_id}/{branch}")
+        self.logger.debug(
+            f"Added link {payload['src']} -> {payload['dst']} in {world_id}/{branch}"
+        )
 
     async def _handle_link_removed(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle link.removed event idempotently"""
         deleted_rows = await conn.execute(
@@ -225,7 +257,11 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_emo_created(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.created event idempotently"""
         await conn.execute(
@@ -270,10 +306,16 @@ class RelationalProjector(ProjectorSDK):
         # Handle links
         await self._handle_emo_links(conn, world_id, branch, payload)
 
-        self.logger.debug(f"Created EMO {payload['emo_id']} v{payload['emo_version']} in {world_id}/{branch}")
+        self.logger.debug(
+            f"Created EMO {payload['emo_id']} v{payload['emo_version']} in {world_id}/{branch}"
+        )
 
     async def _handle_emo_updated(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.updated event idempotently"""
         updated_rows = await conn.execute(
@@ -314,32 +356,82 @@ class RelationalProjector(ProjectorSDK):
         )
 
     async def _handle_emo_linked(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.linked event for lineage relationships"""
         await self._handle_emo_links(conn, world_id, branch, payload)
 
-        self.logger.debug(f"Updated links for EMO {payload['emo_id']} in {world_id}/{branch}")
+        self.logger.debug(
+            f"Updated links for EMO {payload['emo_id']} in {world_id}/{branch}"
+        )
 
     async def _handle_emo_deleted(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
-        """Handle emo.deleted event (soft delete)"""
+        """Handle emo.deleted event (soft delete with full semantics)"""
+        emo_id = payload["emo_id"]
+        emo_version = payload.get("emo_version", 1)
+        deletion_reason = payload.get("deletion_reason")
+        idempotency_key = payload.get("idempotency_key")
+        change_id = payload.get("change_id")
+
+        # Update the current EMO record with deletion metadata
         await conn.execute(
             """
             UPDATE lens_emo.emo_current 
-            SET deleted = TRUE, updated_at = now()
+            SET deleted = TRUE, 
+                deleted_at = now(),
+                deletion_reason = $4,
+                updated_at = now()
             WHERE emo_id = $1::uuid AND world_id = $2::uuid AND branch = $3
         """,
-            payload["emo_id"],
+            emo_id,
             world_id,
             branch,
+            deletion_reason,
         )
 
-        self.logger.debug(f"Soft deleted EMO {payload['emo_id']} from {world_id}/{branch}")
+        # Record deletion in history for audit trail
+        content_hash = self._compute_emo_content_hash("")  # Deleted content is empty
+
+        try:
+            await conn.execute(
+                """
+                INSERT INTO lens_emo.emo_history (
+                    change_id, emo_id, emo_version, world_id, branch, 
+                    operation_type, content_hash, idempotency_key
+                ) VALUES ($1, $2, $3, $4, $5, 'deleted', $6, $7)
+                ON CONFLICT (idempotency_key) DO NOTHING
+            """,
+                change_id,
+                emo_id,
+                emo_version,
+                world_id,
+                branch,
+                content_hash,
+                idempotency_key,
+            )
+        except Exception as e:
+            self.logger.warning(f"Idempotency violation for EMO deletion {emo_id}: {e}")
+
+        self.logger.debug(
+            f"Soft deleted EMO {emo_id} from {world_id}/{branch} (reason: {deletion_reason})"
+        )
 
     async def _handle_emo_links(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle EMO links (parents and external links)"""
         emo_id = payload["emo_id"]
@@ -400,6 +492,7 @@ class RelationalProjector(ProjectorSDK):
     def _compute_emo_content_hash(self, content: str) -> str:
         """Compute SHA-256 hash of EMO content"""
         import hashlib
+
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     async def _get_state_snapshot(
@@ -469,7 +562,7 @@ class RelationalProjector(ProjectorSDK):
         )
 
         return {
-            "lens": "relational", 
+            "lens": "relational",
             "world_id": world_id,
             "branch": branch,
             "notes": [serialize_record(note) for note in notes],

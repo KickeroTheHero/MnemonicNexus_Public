@@ -57,9 +57,14 @@ class EventEnvelope:
 
             # Ensure it's a valid ISO8601/RFC3339 format by round-trip
             # This catches permissive parsing that accepts invalid forms
-            if dt.isoformat() not in [timestamp_str.rstrip("Z"), timestamp_str.rstrip("Z") + "Z"]:
+            if dt.isoformat() not in [
+                timestamp_str.rstrip("Z"),
+                timestamp_str.rstrip("Z") + "Z",
+            ]:
                 # Allow either with or without Z suffix
-                if not (timestamp_str.endswith("Z") or timestamp_str.endswith("+00:00")):
+                if not (
+                    timestamp_str.endswith("Z") or timestamp_str.endswith("+00:00")
+                ):
                     raise ValueError("Timestamp must be UTC (end with Z or +00:00)")
 
         except (ValueError, TypeError):

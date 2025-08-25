@@ -20,9 +20,13 @@
       "description": "Unique EMO identifier (UUIDv4)"
     },
     "emo_type": {
-      "type": "string",
+      "type": "string", 
       "enum": ["note", "fact", "doc", "artifact", "profile"],
       "description": "EMO type classification"
+    },
+    "deletion_reason": {
+      "type": "string",
+      "description": "Reason for EMO deletion (only for emo.deleted events)"
     },
     "emo_version": {
       "type": "integer",
@@ -136,6 +140,15 @@
         }
       },
       "description": "Vector metadata for semantic operations"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Unique key for event deduplication, format: {emo_id}:{emo_version}:{operation}"
+    },
+    "change_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this specific change operation"
     },
     "schema_version": {
       "type": "integer",

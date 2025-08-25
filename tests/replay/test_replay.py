@@ -77,7 +77,9 @@ class ReplayHarness:
         # Standard test tenancy context
         world_id = "550e8400-e29b-41d4-a716-446655440000"  # Fixed test UUID
         branch = "test"
-        correlation_id = str(uuid.UUID("550e8400-e29b-41d4-a716-446655440001"))  # Fixed correlation
+        correlation_id = str(
+            uuid.UUID("550e8400-e29b-41d4-a716-446655440001")
+        )  # Fixed correlation
 
         # Override RNG seed for determinism
         os.environ["rng_seed"] = str(seed)
@@ -85,7 +87,10 @@ class ReplayHarness:
         try:
             # Execute decision through controller
             decision_record = await self.controller.make_decision(
-                query=prompt, world_id=world_id, branch=branch, correlation_id=correlation_id
+                query=prompt,
+                world_id=world_id,
+                branch=branch,
+                correlation_id=correlation_id,
             )
 
             return {
@@ -108,10 +113,16 @@ class ReplayHarness:
                 "error": str(e),
             }
 
-    def validate_tenancy_fields(self, decision_record: dict[str, Any]) -> dict[str, Any]:
+    def validate_tenancy_fields(
+        self, decision_record: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validate S0 tenancy requirements in decision record"""
 
-        validation_results = {"tenancy_compliant": True, "missing_fields": [], "invalid_fields": {}}
+        validation_results = {
+            "tenancy_compliant": True,
+            "missing_fields": [],
+            "invalid_fields": {},
+        }
 
         required_fields = {
             "world_id": str,
@@ -149,7 +160,9 @@ class ReplayHarness:
 
         return validation_results
 
-    def validate_fusion_requirements(self, decision_record: dict[str, Any]) -> dict[str, Any]:
+    def validate_fusion_requirements(
+        self, decision_record: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validate fusion/ranking requirements if FUSION_ENABLE=true"""
 
         fusion_enabled = os.getenv("FUSION_ENABLE", "false").lower() == "true"
@@ -170,7 +183,9 @@ class ReplayHarness:
 
                 # Check if rank_version is included in hash computation
                 # This would require re-computing the hash to verify
-                validation_results["rank_version_in_hash"] = True  # Assume correct for now
+                validation_results["rank_version_in_hash"] = (
+                    True  # Assume correct for now
+                )
 
         return validation_results
 
@@ -339,7 +354,9 @@ class TestGoldenReplay:
         ]
 
         for expected_name in expected_names:
-            assert expected_name in test_names, f"Missing required golden test: {expected_name}"
+            assert (
+                expected_name in test_names
+            ), f"Missing required golden test: {expected_name}"
 
         print(f"✅ Loaded {len(golden_tests)} golden tests: {test_names}")
 
@@ -366,25 +383,39 @@ class TestGoldenReplay:
 
             # Validate tenancy fields
             tenancy_validation = self.harness.validate_tenancy_fields(decision_record)
-            print(f"   Tenancy: {'✅' if tenancy_validation['tenancy_compliant'] else '❌'}")
+            print(
+                f"   Tenancy: {'✅' if tenancy_validation['tenancy_compliant'] else '❌'}"
+            )
 
             # Validate fusion requirements
-            fusion_validation = self.harness.validate_fusion_requirements(decision_record)
-            print(f"   Fusion: {'✅' if fusion_validation['fusion_compliant'] else '❌'}")
+            fusion_validation = self.harness.validate_fusion_requirements(
+                decision_record
+            )
+            print(
+                f"   Fusion: {'✅' if fusion_validation['fusion_compliant'] else '❌'}"
+            )
 
             # Validate hash stability
-            hash_validation = self.harness.validate_hash_stability(decision_record, test_data)
+            hash_validation = self.harness.validate_hash_stability(
+                decision_record, test_data
+            )
             print(f"   Hash Stable: {'✅' if hash_validation['hash_stable'] else '❌'}")
 
             # Validate citations if required
             citation_validation = self.harness.validate_citations_requirement(
                 decision_record, test_data
             )
-            print(f"   Citations: {'✅' if citation_validation['citations_compliant'] else '❌'}")
+            print(
+                f"   Citations: {'✅' if citation_validation['citations_compliant'] else '❌'}"
+            )
 
             # Validate must_contain requirements
-            content_validation = self.harness.validate_must_contain(decision_record, test_data)
-            print(f"   Content: {'✅' if content_validation['must_contain_compliant'] else '❌'}")
+            content_validation = self.harness.validate_must_contain(
+                decision_record, test_data
+            )
+            print(
+                f"   Content: {'✅' if content_validation['must_contain_compliant'] else '❌'}"
+            )
 
             # Collect results
             compliance_results.append(
@@ -560,9 +591,9 @@ class TestGoldenReplay:
                 tenancy_ok = self.harness.validate_tenancy_fields(decision_record)[
                     "tenancy_compliant"
                 ]
-                hash_ok = self.harness.validate_hash_stability(decision_record, test_data)[
-                    "hash_stable"
-                ]
+                hash_ok = self.harness.validate_hash_stability(
+                    decision_record, test_data
+                )["hash_stable"]
 
                 print(f"   {'✅' if tenancy_ok else '❌'} Tenancy compliance")
                 print(f"   {'✅' if hash_ok else '❌'} Hash stability")
@@ -698,7 +729,9 @@ async def test_golden_peer_echo_optional():
 
     # Peer echo may fail if RAG_ENABLE=0, which is expected
     if not result["success"] and "peer" in result.get("error", "").lower():
-        pytest.skip(f"Peer echo test skipped (expected with RAG_ENABLE=0): {result.get('error')}")
+        pytest.skip(
+            f"Peer echo test skipped (expected with RAG_ENABLE=0): {result.get('error')}"
+        )
 
     assert result["success"], f"Peer echo test failed: {result.get('error')}"
 

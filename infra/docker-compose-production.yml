@@ -1,0 +1,247 @@
+# MNX Production Docker Compose - Pinned Image Digests
+# Use this for production deployments with security hardening
+
+services:
+  postgres:
+    # Custom image built from pgvector/pgvector:pg16
+    image: nexus/postgres-age:pg16
+    container_name: nexus-postgres
+    environment:
+      POSTGRES_DB: nexus
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Postgres needs write access
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      
+  gateway:
+    build:
+      context: ..
+      dockerfile: services/gateway/Dockerfile
+      # Pin base image in Dockerfile: FROM python:3.11-slim@sha256:...
+    container_name: nexus-gateway
+    ports:
+      - "8081:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      GRAPH_ADAPTER: age
+      LOG_LEVEL: INFO
+      # Production API keys (set via environment or secrets)
+      MNX_ADMIN_API_KEY: ${MNX_ADMIN_API_KEY}
+      MNX_WRITE_API_KEY: ${MNX_WRITE_API_KEY}
+      MNX_READ_API_KEY: ${MNX_READ_API_KEY}
+      # Rate limiting
+      RATE_LIMIT_PER_MINUTE: 1000
+      # Security
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  publisher:
+    build: 
+      context: ../services/publisher
+      # Pin base image in Dockerfile: FROM python:3.11-slim@sha256:...
+    container_name: nexus-publisher
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8000"
+    environment:
+      CDC_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      CDC_POLL_INTERVAL_MS: 100
+      CDC_BATCH_SIZE: 50
+      CDC_PROJECTOR_TIMEOUT_MS: 5000
+      CDC_PUBLISHER_ID: cdc-publisher
+      CDC_PROJECTOR_ENDPOINTS: http://projector-rel:8000,http://projector-graph:8000,http://projector-sem:8000
+      LOG_LEVEL: INFO
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  projector-rel:
+    build:
+      context: ..
+      dockerfile: projectors/relational/Dockerfile
+    container_name: nexus-projector-rel
+    ports:
+      - "8083:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  projector-graph:
+    build:
+      context: ..
+      dockerfile: projectors/graph/Dockerfile
+    container_name: nexus-projector-graph
+    ports:
+      - "8084:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  projector-sem:
+    build:
+      context: ..
+      dockerfile: projectors/semantic/Dockerfile
+    container_name: nexus-projector-sem
+    ports:
+      - "8085:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECTOR_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      PROJECTOR_PORT: 8000
+      PROJECTOR_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+      # LMStudio configuration
+      EMBEDDING_MODEL_TYPE: lmstudio
+      LMSTUDIO_ENDPOINT: http://host.docker.internal:1234/v1/embeddings
+      LMSTUDIO_MODEL: text-embedding-nomic-embed-text-v1.5
+      VECTOR_DIMENSIONS: 768
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  controller:
+    build:
+      context: ..
+      dockerfile: mnx/inference/moe_controller/Dockerfile
+    container_name: nexus-controller
+    ports:
+      - "8086:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/nexus
+      LMSTUDIO_ENDPOINT: http://host.docker.internal:1234/v1/completions
+      LMSTUDIO_MODEL: lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF
+      LMSTUDIO_API_KEY: ""
+      TOOL_TIMEOUT_MS: 8000
+      TOOL_ROW_CAP: 200
+      RAG_ENABLE: 0
+      WEB_SEARCH_ENGINE: duckduckgo
+      CONTROLLER_PORT: 8000
+      CONTROLLER_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+      GATEWAY_ENDPOINT: http://gateway:8000
+      GATEWAY_TIMEOUT_MS: 5000
+      DECISION_SEED_OVERRIDE: ""
+      CORRELATION_ID_HEADER: "X-Correlation-ID"
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+volumes:
+  postgres_data:
+    name: nexus_postgres_data
+
+networks:
+  nexus-network:
+    name: nexus-network
+    driver: bridge

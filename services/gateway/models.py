@@ -65,14 +65,18 @@ class ErrorResponse(BaseModel):
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Human-readable error message")
     correlation_id: Optional[str] = Field(None, description="Request correlation ID")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    details: Optional[Dict[str, Any]] = Field(
+        None, description="Additional error details"
+    )
 
 
 class EventListResponse(BaseModel):
     """Response for event listing with pagination"""
 
     items: list = Field(..., description="List of events")
-    next_after_global_seq: Optional[int] = Field(None, description="Next pagination cursor")
+    next_after_global_seq: Optional[int] = Field(
+        None, description="Next pagination cursor"
+    )
     has_more: bool = Field(..., description="Whether more events exist")
 
 

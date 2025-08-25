@@ -1,5 +1,5 @@
 """
-Graph Projector for MnemonicNexus V2
+Graph Projector for MnemonicNexus
 AGE-based graph projection with world/branch isolation
 """
 
@@ -17,7 +17,7 @@ from services.common.graph_adapter import AGEAdapter, GraphAdapter
 
 
 class GraphProjector(ProjectorSDK):
-    """AGE-based graph projector for V2 events"""
+    """AGE-based graph projector for events"""
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
@@ -25,7 +25,7 @@ class GraphProjector(ProjectorSDK):
 
     @property
     def name(self) -> str:
-        return "graph-projector-v2"
+        return "graph-projector"
 
     @property
     def lens(self) -> str:
@@ -83,50 +83,42 @@ class GraphProjector(ProjectorSDK):
         if kind == "note.created":
             note_id = payload.get("id")
             title = payload.get("title", "")
-            
+
             # Create envelope for graph adapter
             envelope = {
                 "kind": kind,
                 "world_id": world_id,
                 "branch": branch,
-                "payload": {
-                    "id": note_id,
-                    "title": title
-                }
+                "payload": {"id": note_id, "title": title},
             }
-            
+
             await self.graph_adapter.apply_event(world_id, branch, envelope)
 
         elif kind == "note.updated":
             note_id = payload.get("id")
             title = payload.get("title", "")
-            
+
             # Create envelope for graph adapter
             envelope = {
                 "kind": kind,
                 "world_id": world_id,
                 "branch": branch,
-                "payload": {
-                    "id": note_id,
-                    "title": title
-                }
+                "payload": {"id": note_id, "title": title},
             }
-            
+
             await self.graph_adapter.apply_event(world_id, branch, envelope)
 
         elif kind == "note.deleted":
             note_id = payload.get("id")
-            
+
             # Create envelope for graph adapter
             envelope = {
                 "kind": kind,
                 "world_id": world_id,
                 "branch": branch,
-                "payload": {
-                    "id": note_id
-                }
+                "payload": {"id": note_id},
             }
-            
+
             await self.graph_adapter.apply_event(world_id, branch, envelope)
 
     async def _handle_tag_event(
@@ -137,12 +129,12 @@ class GraphProjector(ProjectorSDK):
             graph_name = await conn.fetchval(
                 "SELECT lens_graph.ensure_graph_exists($1, $2)", world_id, branch
             )
-            
+
             if kind == "tag.added":
                 tag = payload.get("tag")
                 note_id = payload.get("id")
                 applied_at = payload.get("applied_at", "now()")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -163,7 +155,7 @@ class GraphProjector(ProjectorSDK):
             elif kind == "tag.removed":
                 tag = payload.get("tag")
                 note_id = payload.get("id")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -185,13 +177,13 @@ class GraphProjector(ProjectorSDK):
             graph_name = await conn.fetchval(
                 "SELECT lens_graph.ensure_graph_exists($1, $2)", world_id, branch
             )
-            
+
             if kind == "link.added":
                 src_note_id = payload.get("src")
                 dst_note_id = payload.get("dst")
                 link_type = payload.get("link_type", "reference")
                 created_at = payload.get("created_at", "now()")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -214,7 +206,7 @@ class GraphProjector(ProjectorSDK):
             elif kind == "link.removed":
                 src_note_id = payload.get("src")
                 dst_note_id = payload.get("dst")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -236,12 +228,12 @@ class GraphProjector(ProjectorSDK):
             graph_name = await conn.fetchval(
                 "SELECT lens_graph.ensure_graph_exists($1, $2)", world_id, branch
             )
-            
+
             if kind == "mention.added":
                 note_id = payload.get("id")
                 entity = payload.get("entity")
                 created_at = payload.get("created_at", "now()")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -257,11 +249,11 @@ class GraphProjector(ProjectorSDK):
                     $$) AS (result agtype)
                     """
                 )
-                
+
             elif kind == "mention.removed":
                 note_id = payload.get("id")
                 entity = payload.get("entity")
-                
+
                 await conn.fetch(
                     f"""
                     SELECT * FROM cypher('{graph_name}', $$
@@ -296,7 +288,11 @@ class GraphProjector(ProjectorSDK):
             raise
 
     async def _handle_emo_created(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.created by adding EMO node and relationships"""
         emo_id = payload["emo_id"]
@@ -338,7 +334,11 @@ class GraphProjector(ProjectorSDK):
         self.logger.debug(f"Created EMO graph node {emo_id} in {world_id}/{branch}")
 
     async def _handle_emo_updated(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.updated by updating EMO node properties"""
         emo_id = payload["emo_id"]
@@ -365,10 +365,16 @@ class GraphProjector(ProjectorSDK):
             properties,
         )
 
-        self.logger.debug(f"Updated EMO graph node {emo_id} to v{emo_version} in {world_id}/{branch}")
+        self.logger.debug(
+            f"Updated EMO graph node {emo_id} to v{emo_version} in {world_id}/{branch}"
+        )
 
     async def _handle_emo_linked(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.linked by adding/updating relationships"""
         emo_id = payload["emo_id"]
@@ -398,7 +404,11 @@ class GraphProjector(ProjectorSDK):
         self.logger.debug(f"Updated EMO links for {emo_id} in {world_id}/{branch}")
 
     async def _handle_emo_deleted(
-        self, conn: asyncpg.Connection, world_id: str, branch: str, payload: Dict[str, Any]
+        self,
+        conn: asyncpg.Connection,
+        world_id: str,
+        branch: str,
+        payload: Dict[str, Any],
     ):
         """Handle emo.deleted by soft-deleting EMO node"""
         emo_id = payload["emo_id"]
@@ -411,7 +421,9 @@ class GraphProjector(ProjectorSDK):
             emo_id,
         )
 
-        self.logger.debug(f"Soft deleted EMO graph node {emo_id} from {world_id}/{branch}")
+        self.logger.debug(
+            f"Soft deleted EMO graph node {emo_id} from {world_id}/{branch}"
+        )
 
     async def _get_state_snapshot(
         self, conn: asyncpg.Connection, world_id: str, branch: str
@@ -422,7 +434,7 @@ class GraphProjector(ProjectorSDK):
         graph_name = await conn.fetchval(
             "SELECT lens_graph.ensure_graph_exists($1, $2)", world_id, branch
         )
-        
+
         try:
             # Basic node count
             node_count_result = await conn.fetch(
@@ -432,8 +444,10 @@ class GraphProjector(ProjectorSDK):
                 $$) AS (result agtype)
                 """
             )
-            node_count = node_count_result[0]['result']['count'] if node_count_result else 0
-            
+            node_count = (
+                node_count_result[0]["result"]["count"] if node_count_result else 0
+            )
+
             # Basic edge count
             edge_count_result = await conn.fetch(
                 f"""
@@ -442,8 +456,10 @@ class GraphProjector(ProjectorSDK):
                 $$) AS (result agtype)
                 """
             )
-            edge_count = edge_count_result[0]['result']['count'] if edge_count_result else 0
-            
+            edge_count = (
+                edge_count_result[0]["result"]["count"] if edge_count_result else 0
+            )
+
             # Sample note IDs for deterministic comparison
             note_ids_result = await conn.fetch(
                 f"""
@@ -452,14 +468,18 @@ class GraphProjector(ProjectorSDK):
                 $$) AS (result agtype)
                 """
             )
-            note_ids = [row['result']['id'] for row in note_ids_result] if note_ids_result else []
-            
+            note_ids = (
+                [row["result"]["id"] for row in note_ids_result]
+                if note_ids_result
+                else []
+            )
+
         except Exception as e:
             self.logger.warning(f"Failed to get graph state snapshot: {e}")
             # Return empty state if graph operations fail
             node_count = edge_count = 0
             note_ids = []
-        
+
         # Get EMO graph statistics
         try:
             emo_stats_result = await conn.fetchrow(
@@ -468,9 +488,15 @@ class GraphProjector(ProjectorSDK):
                 branch,
             )
             emo_stats = {
-                "total_nodes": emo_stats_result["total_nodes"] if emo_stats_result else 0,
-                "active_nodes": emo_stats_result["active_nodes"] if emo_stats_result else 0,
-                "total_relationships": emo_stats_result["total_relationships"] if emo_stats_result else 0,
+                "total_nodes": (
+                    emo_stats_result["total_nodes"] if emo_stats_result else 0
+                ),
+                "active_nodes": (
+                    emo_stats_result["active_nodes"] if emo_stats_result else 0
+                ),
+                "total_relationships": (
+                    emo_stats_result["total_relationships"] if emo_stats_result else 0
+                ),
             }
         except Exception as e:
             self.logger.warning(f"Failed to get EMO graph stats: {e}")

@@ -30,7 +30,9 @@ class RebuildRequest(BaseModel):
     world_id: UUID
     branch: str = Field(default="main", description="Branch to rebuild")
     from_global_seq: int = Field(default=0, description="Starting sequence number")
-    clear_existing: bool = Field(default=False, description="Clear existing projector state")
+    clear_existing: bool = Field(
+        default=False, description="Clear existing projector state"
+    )
 
 
 class RebuildResponse(BaseModel):
@@ -127,7 +129,9 @@ async def get_system_health(db_pool: asyncpg.Pool = Depends(get_db_pool)):
                         "world_count": proj["world_count"],
                         "max_sequence": proj["max_seq"],
                         "last_update": (
-                            proj["last_update"].isoformat() if proj["last_update"] else None
+                            proj["last_update"].isoformat()
+                            if proj["last_update"]
+                            else None
                         ),
                     }
                 )
@@ -153,7 +157,8 @@ async def rebuild_projector(
     valid_lenses = ["rel", "sem", "graph"]
     if lens not in valid_lenses:
         raise HTTPException(
-            status_code=400, detail=f"Invalid lens '{lens}'. Must be one of: {valid_lenses}"
+            status_code=400,
+            detail=f"Invalid lens '{lens}'. Must be one of: {valid_lenses}",
         )
 
     try:
@@ -177,7 +182,9 @@ async def rebuild_projector(
             )
 
         # Schedule background rebuild task
-        background_tasks.add_task(_execute_projector_rebuild, job_id, lens, request, db_pool)
+        background_tasks.add_task(
+            _execute_projector_rebuild, job_id, lens, request, db_pool
+        )
 
         return RebuildResponse(
             rebuild_job_id=job_id,
@@ -207,15 +214,22 @@ async def test_tenancy_isolation(
             rls_validation = await TenancyValidator.validate_rls_setup(conn)
 
             # Test isolation between tenants
-            isolation_results = await TenancyValidator.test_isolation(conn, world_id_1, world_id_2)
+            isolation_results = await TenancyValidator.test_isolation(
+                conn, world_id_1, world_id_2
+            )
 
         return TenancyTestResponse(
             isolation_status=(
-                "pass" if isolation_results.get("cross_tenant_blocked", False) else "fail"
+                "pass"
+                if isolation_results.get("cross_tenant_blocked", False)
+                else "fail"
             ),
             rls_enabled=rls_validation.get("rls_enabled", False),
             policies_active=rls_validation.get("policies_exist", False),
-            test_results={"rls_validation": rls_validation, "isolation_test": isolation_results},
+            test_results={
+                "rls_validation": rls_validation,
+                "isolation_test": isolation_results,
+            },
         )
 
     except Exception as e:
@@ -237,7 +251,9 @@ async def refresh_materialized_view(
     # Validate MV name to prevent SQL injection
     valid_mvs = ["lens_rel.mv_note_enriched"]  # Add more as needed
     if mv_name not in valid_mvs:
-        raise HTTPException(status_code=400, detail=f"Invalid MV name. Valid options: {valid_mvs}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid MV name. Valid options: {valid_mvs}"
+        )
 
     try:
         async with db_pool.acquire() as conn:
@@ -304,8 +320,12 @@ async def list_projectors(db_pool: asyncpg.Pool = Depends(get_db_pool)):
                     "world_id": str(proj["world_id"]),
                     "branch": proj["branch"],
                     "last_sequence": proj["last_processed_seq"],
-                    "last_update": proj["updated_at"].isoformat() if proj["updated_at"] else None,
-                    "lag_seconds": float(proj["lag_seconds"]) if proj["lag_seconds"] else None,
+                    "last_update": (
+                        proj["updated_at"].isoformat() if proj["updated_at"] else None
+                    ),
+                    "lag_seconds": (
+                        float(proj["lag_seconds"]) if proj["lag_seconds"] else None
+                    ),
                 }
             )
 

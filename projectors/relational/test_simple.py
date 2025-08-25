@@ -39,7 +39,9 @@ async def test_projector_imports():
 
         # Test projector instantiation (without database)
         projector = RelationalProjector(config.model_dump())
-        logger.info(f"✅ Projector instantiated: name={projector.name}, lens={projector.lens}")
+        logger.info(
+            f"✅ Projector instantiated: name={projector.name}, lens={projector.lens}"
+        )
 
         # Test FastAPI app creation
         assert hasattr(projector, "app"), "FastAPI app not created"
@@ -105,8 +107,12 @@ async def test_event_handlers():
         logger.info(f"✅ All {len(expected_handlers)} event handlers found")
 
         # Test hash computation method exists
-        assert hasattr(projector, "compute_state_hash"), "Missing state hash computation"
-        assert hasattr(projector, "_get_state_snapshot"), "Missing state snapshot method"
+        assert hasattr(
+            projector, "compute_state_hash"
+        ), "Missing state hash computation"
+        assert hasattr(
+            projector, "_get_state_snapshot"
+        ), "Missing state snapshot method"
 
         logger.info("✅ State management methods present")
 
@@ -129,7 +135,9 @@ async def main():
             passed += 1
 
     if passed == len(tests):
-        logger.info(f"✅ All {len(tests)} tests passed! Phase A5 Projector ready for integration.")
+        logger.info(
+            f"✅ All {len(tests)} tests passed! Phase A5 Projector ready for integration."
+        )
         return 0
     else:
         logger.error(f"❌ {len(tests) - passed} out of {len(tests)} tests failed.")

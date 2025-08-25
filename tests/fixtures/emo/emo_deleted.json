@@ -1,0 +1,24 @@
+{
+  "world_id": "550e8400-e29b-41d4-a716-446655440001",
+  "branch": "main",
+  "kind": "emo.deleted",
+  "event_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+  "correlation_id": "delete-req-001",
+  "occurred_at": "2024-01-15T14:30:00.000Z",
+  "by": {
+    "agent": "user:jane.doe@example.com",
+    "context": "Manual deletion via Memory API"
+  },
+  "payload": {
+    "emo_id": "123e4567-e89b-12d3-a456-426614174001",
+    "emo_version": 3,
+    "deletion_reason": "Content no longer relevant, user requested removal",
+    "idempotency_key": "123e4567-e89b-12d3-a456-426614174001:3:deleted",
+    "change_id": "del-12345678-abcd-ef01-2345-6789abcdef01",
+    "world_id": "550e8400-e29b-41d4-a716-446655440001",
+    "branch": "main",
+    "tenant_id": "tenant-550e8400",
+    "schema_version": 1
+  }
+}
+

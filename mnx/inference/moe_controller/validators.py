@@ -73,7 +73,9 @@ class JSONValidator:
         except jsonschema.SchemaError as e:
             raise ValidationError(f"Invalid schema: {e.message}")
 
-    def validate_with_retry(self, data: dict[str, Any], schema_name: str) -> tuple[bool, bool]:
+    def validate_with_retry(
+        self, data: dict[str, Any], schema_name: str
+    ) -> tuple[bool, bool]:
         """
         Validate with single retry policy
 

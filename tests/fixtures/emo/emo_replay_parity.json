@@ -1,0 +1,102 @@
+{
+  "description": "Test fixture for replay parity validation - complete event sequence",
+  "world_id": "550e8400-e29b-41d4-a716-446655440001",
+  "branch": "main",
+  "scenario": "full_replay_validation",
+  "event_sequence": [
+    {
+      "seq": 1,
+      "kind": "emo.created",
+      "event_id": "replay-test-001",
+      "payload": {
+        "emo_id": "replay-emo-001", 
+        "emo_type": "note",
+        "emo_version": 1,
+        "content": "Initial research note",
+        "tags": ["research", "draft"],
+        "idempotency_key": "replay-emo-001:1:created",
+        "change_id": "chg-replay-001"
+      }
+    },
+    {
+      "seq": 2,
+      "kind": "emo.updated",
+      "event_id": "replay-test-002", 
+      "payload": {
+        "emo_id": "replay-emo-001",
+        "emo_version": 2,
+        "content": "Updated research note with findings",
+        "rationale": "Added initial research findings",
+        "idempotency_key": "replay-emo-001:2:updated",
+        "change_id": "chg-replay-002"
+      }
+    },
+    {
+      "seq": 3,
+      "kind": "emo.created", 
+      "event_id": "replay-test-003",
+      "payload": {
+        "emo_id": "replay-emo-002",
+        "emo_type": "note",
+        "emo_version": 1,
+        "content": "Supporting evidence note",
+        "parents": [{"emo_id": "replay-emo-001", "rel": "derived"}],
+        "idempotency_key": "replay-emo-002:1:created",
+        "change_id": "chg-replay-003"
+      }
+    },
+    {
+      "seq": 4,
+      "kind": "emo.linked",
+      "event_id": "replay-test-004",
+      "payload": {
+        "emo_id": "replay-emo-001",
+        "emo_version": 3, 
+        "links": [{"kind": "uri", "ref": "https://example.com/research"}],
+        "idempotency_key": "replay-emo-001:3:linked",
+        "change_id": "chg-replay-004"
+      }
+    },
+    {
+      "seq": 5,
+      "kind": "emo.deleted",
+      "event_id": "replay-test-005",
+      "payload": {
+        "emo_id": "replay-emo-002",
+        "emo_version": 2,
+        "deletion_reason": "Duplicate content found",
+        "idempotency_key": "replay-emo-002:2:deleted", 
+        "change_id": "chg-replay-005"
+      }
+    }
+  ],
+  "expected_final_state": {
+    "emo_current_rows": 2,
+    "active_emos": 1,
+    "deleted_emos": 1,
+    "total_history_entries": 5,
+    "emo_001_final_version": 3,
+    "emo_002_final_version": 2,
+    "emo_002_deleted": true,
+    "superseded_by_count": 1
+  },
+  "determinism_hash_components": [
+    "EMO identity fields (emo_id, emo_version, world_id, branch)",
+    "Content hashes from all versions",
+    "Parent relationships (replay-emo-002 derives from replay-emo-001)",
+    "External links (https://example.com/research)",
+    "Vector metadata (if embeddings generated)",
+    "Timestamps (normalized to ISO 8601)"
+  ],
+  "test_assertions": [
+    "Genesis to final state replay produces identical emo_current table",
+    "Identical emo_history records with same change_ids",
+    "Same parent/child relationships in emo_links table", 
+    "Identical vector embeddings (if generated)",
+    "Same graph structure with 1 SUPERSEDED_BY relationship",
+    "Same determinism hash for complete state",
+    "Materialized view emo_active shows only 1 active EMO",
+    "Deleted EMO (002) hidden from active views but preserved in history"
+  ]
+}
+

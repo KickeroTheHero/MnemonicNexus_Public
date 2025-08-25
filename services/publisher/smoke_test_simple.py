@@ -36,7 +36,9 @@ def test_imports() -> None:
 
         # Test config instantiation
         config = PublisherConfig()
-        logger.info("✅ PublisherConfig instantiated: database_url=%s", config.database_url)
+        logger.info(
+            "✅ PublisherConfig instantiated: database_url=%s", config.database_url
+        )
         logger.info("   - poll_interval_ms: %d", config.poll_interval_ms)
         logger.info("   - batch_size: %d", config.batch_size)
         logger.info("   - projector_endpoints: %s", config.projector_endpoints)
@@ -48,11 +50,17 @@ def test_imports() -> None:
         # Test retry logic
         next_retry = RetryHandler.calculate_next_retry(3)
         should_dlq = RetryHandler.should_move_to_dlq(15)
-        logger.info("✅ RetryHandler logic: next_retry=%s, should_dlq=%s", next_retry, should_dlq)
+        logger.info(
+            "✅ RetryHandler logic: next_retry=%s, should_dlq=%s",
+            next_retry,
+            should_dlq,
+        )
 
         # Test DLQ
         dlq = DeadLetterQueue("test-publisher")
-        logger.info("✅ DeadLetterQueue instantiated with publisher_id=%s", dlq.publisher_id)
+        logger.info(
+            "✅ DeadLetterQueue instantiated with publisher_id=%s", dlq.publisher_id
+        )
 
     except ImportError as e:
         logger.error("❌ Import failed: %s", e)
@@ -77,7 +85,9 @@ def test_configuration() -> None:
 
     config = PublisherConfig()
 
-    assert config.poll_interval_ms == 200, f"Expected 200, got {config.poll_interval_ms}"
+    assert (
+        config.poll_interval_ms == 200
+    ), f"Expected 200, got {config.poll_interval_ms}"
     assert config.batch_size == 25, f"Expected 25, got {config.batch_size}"
     assert (
         config.publisher_id == "test-publisher-smoke"

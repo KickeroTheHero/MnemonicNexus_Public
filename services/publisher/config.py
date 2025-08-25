@@ -19,7 +19,9 @@ class PublisherConfig:
         self.batch_size: int = int(os.getenv("CDC_BATCH_SIZE", "50"))
 
         # Projector communication
-        self.projector_timeout_ms: int = int(os.getenv("CDC_PROJECTOR_TIMEOUT_MS", "5000"))
+        self.projector_timeout_ms: int = int(
+            os.getenv("CDC_PROJECTOR_TIMEOUT_MS", "5000")
+        )
         endpoints_env = os.getenv(
             "CDC_PROJECTOR_ENDPOINTS",
             ",".join(
@@ -35,7 +37,9 @@ class PublisherConfig:
         ]
 
         # Reliability
-        self.max_processing_attempts: int = int(os.getenv("CDC_MAX_PROCESSING_ATTEMPTS", "10"))
+        self.max_processing_attempts: int = int(
+            os.getenv("CDC_MAX_PROCESSING_ATTEMPTS", "10")
+        )
         self.dlq_enabled: bool = os.getenv("CDC_DLQ_ENABLED", "true").lower() in (
             "1",
             "true",

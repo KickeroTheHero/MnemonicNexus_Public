@@ -40,7 +40,9 @@ class PublisherMetrics:
             "Time taken to publish event batch",
             ["batch_size"],
         )
-        self.dlq_count = Gauge("cdc_dlq_messages_total", "Number of messages in dead letter queue")
+        self.dlq_count = Gauge(
+            "cdc_dlq_messages_total", "Number of messages in dead letter queue"
+        )
 
 
 class MetricsUpdater:
@@ -90,12 +92,14 @@ class MetricsUpdater:
                 """
             )
             for r in rows:
-                self.metrics.outbox_lag.labels(world_id=str(r["world_id"]), branch=r["branch"]).set(
-                    float(r["lag_seconds"] or 0.0)
-                )
+                self.metrics.outbox_lag.labels(
+                    world_id=str(r["world_id"]), branch=r["branch"]
+                ).set(float(r["lag_seconds"] or 0.0))
 
     async def _update_dlq_metrics(self) -> None:
         """Update DLQ count from database."""
         async with self.pool.acquire() as conn:
-            dlq_count_row = await conn.fetchval("SELECT COUNT(*) FROM event_core.dead_letter_queue")
+            dlq_count_row = await conn.fetchval(
+                "SELECT COUNT(*) FROM event_core.dead_letter_queue"
+            )
             self.metrics.dlq_count.set(int(dlq_count_row))

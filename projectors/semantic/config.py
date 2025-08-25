@@ -14,7 +14,8 @@ class SemanticProjectorConfig(BaseModel):
     # Base projector configuration
     database_url: str = Field(
         default_factory=lambda: os.getenv(
-            "PROJECTOR_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/nexus_v2"
+            "PROJECTOR_DATABASE_URL",
+            "postgresql://postgres:postgres@localhost:5432/nexus_v2",
         )
     )
     projector_name: str = "projector_sem"
@@ -23,18 +24,24 @@ class SemanticProjectorConfig(BaseModel):
 
     # Embedding model configuration
     embedding_model_type: str = Field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL_TYPE", "sentence-transformer")
+        default_factory=lambda: os.getenv(
+            "EMBEDDING_MODEL_TYPE", "sentence-transformer"
+        )
     )  # "openai", "sentence-transformer", or "lmstudio"
 
     # OpenAI configuration
-    openai_api_key: Optional[str] = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY"))
+    openai_api_key: Optional[str] = Field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY")
+    )
     openai_model: str = Field(
         default_factory=lambda: os.getenv("OPENAI_MODEL", "text-embedding-ada-002")
     )
 
     # Sentence Transformer configuration
     sentence_transformer_model: str = Field(
-        default_factory=lambda: os.getenv("SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
+        default_factory=lambda: os.getenv(
+            "SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2"
+        )
     )
 
     # LMStudio configuration

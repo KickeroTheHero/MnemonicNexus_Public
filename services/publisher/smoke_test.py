@@ -23,7 +23,8 @@ class SmokeTest:
     """Smoke test for publisher functionality."""
 
     def __init__(
-        self, database_url: str = "postgresql://postgres:postgres@localhost:5433/nexus_v2"
+        self,
+        database_url: str = "postgresql://postgres:postgres@localhost:5433/nexus_v2",
     ):
         self.database_url = database_url
         self.test_world_id = str(uuid.uuid4())
@@ -68,7 +69,9 @@ class SmokeTest:
                 self.test_world_id,
             )
 
-    async def _create_synthetic_events(self, pool: asyncpg.Pool, count: int = 5) -> None:
+    async def _create_synthetic_events(
+        self, pool: asyncpg.Pool, count: int = 5
+    ) -> None:
         """Create synthetic events in the outbox."""
         logger.info("Creating %d synthetic events...", count)
         async with pool.acquire() as conn:
@@ -93,7 +96,9 @@ class SmokeTest:
                     uuid.UUID(envelope["event_id"]),
                     envelope["kind"],
                     json.dumps(envelope),
-                    datetime.fromisoformat(envelope["occurred_at"].replace("Z", "+00:00")),
+                    datetime.fromisoformat(
+                        envelope["occurred_at"].replace("Z", "+00:00")
+                    ),
                     f"smoke-test-{i}",  # idempotency key
                 )
                 logger.info("Created event %d with global_seq: %s", i, global_seq)
@@ -229,7 +234,9 @@ class SmokeTest:
                 "smoke_test": True,
             },
             "by": {"agent": "smoke-test-publisher"},
-            "occurred_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "occurred_at": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "payload_hash": f"test-hash-{event_name}",
         }
 

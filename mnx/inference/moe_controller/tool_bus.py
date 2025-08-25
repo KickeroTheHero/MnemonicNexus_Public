@@ -63,7 +63,9 @@ class ToolBus:
 
         # Web search configuration
         self.web_search_enabled = True  # Could be configurable
-        self.web_search_engine = os.getenv("WEB_SEARCH_ENGINE", "duckduckgo")  # or 'google', 'bing'
+        self.web_search_engine = os.getenv(
+            "WEB_SEARCH_ENGINE", "duckduckgo"
+        )  # or 'google', 'bing'
 
         # Initialize database pool if not provided
         if not self.db_pool:
@@ -94,14 +96,20 @@ class ToolBus:
 
         async with self.db_pool.acquire() as conn:
             # Set tenancy context for RLS
-            await conn.execute("SELECT set_config('app.current_world_id', $1, false)", world_id)
-            await conn.execute("SELECT set_config('app.current_branch', $1, false)", branch)
+            await conn.execute(
+                "SELECT set_config('app.current_world_id', $1, false)", world_id
+            )
+            await conn.execute(
+                "SELECT set_config('app.current_branch', $1, false)", branch
+            )
 
             try:
                 yield conn
             finally:
                 # Clear tenancy context
-                await conn.execute("SELECT set_config('app.current_world_id', '', false)")
+                await conn.execute(
+                    "SELECT set_config('app.current_world_id', '', false)"
+                )
                 await conn.execute("SELECT set_config('app.current_branch', '', false)")
 
     async def execute_tools(
@@ -130,7 +138,9 @@ class ToolBus:
             tool_name = tool.get("name", "unknown")
             parameters = tool.get("parameters", {})
 
-            result = await self._execute_single_tool(tool_name, parameters, world_id, branch)
+            result = await self._execute_single_tool(
+                tool_name, parameters, world_id, branch
+            )
             results.append(result)
 
         return results
@@ -144,7 +154,9 @@ class ToolBus:
 
         try:
             # First attempt
-            result = await self._execute_tool_with_timeout(tool_name, parameters, world_id, branch)
+            result = await self._execute_tool_with_timeout(
+                tool_name, parameters, world_id, branch
+            )
 
             # Apply row cap
             capped_result, was_capped = self._apply_row_cap(result, tool_name)
@@ -152,7 +164,10 @@ class ToolBus:
             duration = (time.time() - start_time) * 1000
 
             return ToolResult(
-                success=True, data=capped_result, duration_ms=duration, row_capped=was_capped
+                success=True,
+                data=capped_result,
+                duration_ms=duration,
+                row_capped=was_capped,
             )
 
         except (asyncio.TimeoutError, ToolTimeout):
@@ -165,7 +180,10 @@ class ToolBus:
                 duration = (time.time() - start_time) * 1000
 
                 return ToolResult(
-                    success=True, data=capped_result, duration_ms=duration, row_capped=was_capped
+                    success=True,
+                    data=capped_result,
+                    duration_ms=duration,
+                    row_capped=was_capped,
                 )
             except Exception as e:
                 # Second failure - degrade
@@ -188,7 +206,10 @@ class ToolBus:
                 duration = (time.time() - start_time) * 1000
 
                 return ToolResult(
-                    success=True, data=capped_result, duration_ms=duration, row_capped=was_capped
+                    success=True,
+                    data=capped_result,
+                    duration_ms=duration,
+                    row_capped=was_capped,
                 )
             except Exception as e2:
                 duration = (time.time() - start_time) * 1000
@@ -213,11 +234,13 @@ class ToolBus:
             )
         elif tool_name == "semantic_search":
             return await asyncio.wait_for(
-                self._execute_semantic_search(parameters, world_id, branch), timeout=timeout_seconds
+                self._execute_semantic_search(parameters, world_id, branch),
+                timeout=timeout_seconds,
             )
         elif tool_name == "graph_query":
             return await asyncio.wait_for(
-                self._execute_graph_query(parameters, world_id, branch), timeout=timeout_seconds
+                self._execute_graph_query(parameters, world_id, branch),
+                timeout=timeout_seconds,
             )
         elif tool_name == "web_search":
             return await asyncio.wait_for(
@@ -240,7 +263,9 @@ class ToolBus:
         """Execute relational lens search queries"""
 
         query = parameters.get("query", "")
-        search_type = parameters.get("search_type", "full_text")  # full_text, title, tags
+        search_type = parameters.get(
+            "search_type", "full_text"
+        )  # full_text, title, tags
         limit = min(parameters.get("limit", 50), self.row_cap)
 
         async with self._with_tenancy(world_id, branch) as conn:
@@ -572,7 +597,12 @@ class ToolBus:
         try:
             # Use DuckDuckGo Instant Answer API (no API key required)
             search_url = "https://api.duckduckgo.com/"
-            params = {"q": query, "format": "json", "no_html": "1", "skip_disambig": "1"}
+            params = {
+                "q": query,
+                "format": "json",
+                "no_html": "1",
+                "skip_disambig": "1",
+            }
 
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -598,7 +628,9 @@ class ToolBus:
                                 citations.append(data.get("AbstractURL"))
 
                         # Process related topics (limited)
-                        for topic in data.get("RelatedTopics", [])[: limit - len(results)]:
+                        for topic in data.get("RelatedTopics", [])[
+                            : limit - len(results)
+                        ]:
                             if isinstance(topic, dict) and topic.get("Text"):
                                 results.append(
                                     {
@@ -620,7 +652,9 @@ class ToolBus:
                             "search_engine": "DuckDuckGo",
                         }
                     else:
-                        raise aiohttp.ClientError(f"Search API returned {response.status}")
+                        raise aiohttp.ClientError(
+                            f"Search API returned {response.status}"
+                        )
 
         except Exception as e:
             # Fallback to mock results if web search fails
@@ -693,7 +727,9 @@ class ToolBus:
     # ROW CAPPING AND DEGRADATION
     # =============================================================================
 
-    def _apply_row_cap(self, result: dict[str, Any], tool_name: str) -> tuple[dict[str, Any], bool]:
+    def _apply_row_cap(
+        self, result: dict[str, Any], tool_name: str
+    ) -> tuple[dict[str, Any], bool]:
         """Apply row cap to tool results"""
 
         was_capped = False

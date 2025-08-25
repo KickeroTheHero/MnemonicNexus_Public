@@ -27,9 +27,14 @@ CREATE TABLE lens_emo.emo_current (
     tags TEXT[] DEFAULT '{}',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at TIMESTAMPTZ,
+    deletion_reason TEXT,
     source_kind TEXT NOT NULL CHECK (source_kind IN ('user', 'agent', 'ingest')),
     source_uri TEXT,
-    PRIMARY KEY (emo_id, world_id, branch)
+    content_hash TEXT, -- SHA-256 of content for integrity
+    PRIMARY KEY (emo_id),
+    UNIQUE (emo_id, world_id, branch),
+    CHECK ((deleted = FALSE AND deleted_at IS NULL) OR (deleted = TRUE AND deleted_at IS NOT NULL))
 );
 
 -- Indexes for EMO current state
@@ -42,21 +47,26 @@ CREATE INDEX idx_emo_current_updated ON lens_emo.emo_current (world_id, branch, 
 -- EMO VERSION HISTORY TABLE
 -- =============================================================================
 
--- EMO version history for audit and lineage tracking
+-- EMO version history for audit and lineage tracking  
 CREATE TABLE lens_emo.emo_history (
+    change_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     emo_id UUID NOT NULL,
     emo_version INTEGER NOT NULL CHECK (emo_version >= 1),
     world_id UUID NOT NULL,
     branch TEXT NOT NULL,
+    operation_type TEXT NOT NULL CHECK (operation_type IN ('created', 'updated', 'linked', 'deleted')),
     diff JSONB,
     content_hash TEXT NOT NULL, -- SHA-256 of content
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (emo_id, emo_version, world_id, branch)
+    idempotency_key TEXT,
+    UNIQUE (emo_id, emo_version, world_id, branch),
+    FOREIGN KEY (emo_id) REFERENCES lens_emo.emo_current(emo_id) ON DELETE CASCADE
 );
 
 -- Indexes for EMO history
 CREATE INDEX idx_emo_history_id ON lens_emo.emo_history (emo_id, world_id, branch);
 CREATE INDEX idx_emo_history_updated ON lens_emo.emo_history (world_id, branch, updated_at DESC);
+CREATE UNIQUE INDEX idx_emo_history_idempotency ON lens_emo.emo_history (idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 -- =============================================================================
 -- EMO LINKS TABLE
@@ -64,6 +74,7 @@ CREATE INDEX idx_emo_history_updated ON lens_emo.emo_history (world_id, branch, 
 
 -- EMO relationships and external links
 CREATE TABLE lens_emo.emo_links (
+    link_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     emo_id UUID NOT NULL,
     world_id UUID NOT NULL,
     branch TEXT NOT NULL,
@@ -72,7 +83,9 @@ CREATE TABLE lens_emo.emo_links (
     target_uri TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK ((target_emo_id IS NOT NULL) != (target_uri IS NOT NULL)), -- XOR constraint
-    PRIMARY KEY (emo_id, world_id, branch, rel, COALESCE(target_emo_id::text, target_uri))
+    FOREIGN KEY (emo_id) REFERENCES lens_emo.emo_current(emo_id) ON DELETE CASCADE,
+    FOREIGN KEY (target_emo_id) REFERENCES lens_emo.emo_current(emo_id) ON DELETE CASCADE,
+    UNIQUE (emo_id, world_id, branch, rel, COALESCE(target_emo_id::text, target_uri))
 );
 
 -- Indexes for EMO links
@@ -86,6 +99,7 @@ CREATE INDEX idx_emo_links_lineage ON lens_emo.emo_links (world_id, branch, rel)
 
 -- EMO vector embeddings for semantic search
 CREATE TABLE lens_emo.emo_embeddings (
+    embedding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     emo_id UUID NOT NULL,
     emo_version INTEGER NOT NULL CHECK (emo_version >= 1),
     world_id UUID NOT NULL,
@@ -96,7 +110,8 @@ CREATE TABLE lens_emo.emo_embeddings (
     model_version TEXT,
     template_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (emo_id, emo_version, world_id, branch, model_id)
+    FOREIGN KEY (emo_id) REFERENCES lens_emo.emo_current(emo_id) ON DELETE CASCADE,
+    UNIQUE (emo_id, emo_version, world_id, branch, model_id)
 );
 
 -- Indexes for EMO embeddings - optimized for vector similarity search
@@ -163,6 +178,7 @@ SELECT
     ec.updated_at,
     ec.source_kind,
     ec.source_uri,
+    ec.content_hash,
     -- Aggregate links
     COALESCE(
         json_agg(
@@ -171,7 +187,7 @@ SELECT
                 'target_emo_id', el.target_emo_id,
                 'target_uri', el.target_uri
             )
-        ) FILTER (WHERE el.emo_id IS NOT NULL), 
+        ) FILTER (WHERE el.link_id IS NOT NULL), 
         '[]'::json
     ) AS links
 FROM lens_emo.emo_current ec
@@ -184,7 +200,7 @@ WHERE NOT ec.deleted
 GROUP BY 
     ec.emo_id, ec.emo_type, ec.emo_version, ec.tenant_id,
     ec.world_id, ec.branch, ec.mime_type, ec.content,
-    ec.tags, ec.updated_at, ec.source_kind, ec.source_uri;
+    ec.tags, ec.updated_at, ec.source_kind, ec.source_uri, ec.content_hash;
 
 -- Indexes on materialized view
 CREATE INDEX idx_emo_active_tenant_branch ON lens_emo.emo_active (tenant_id, world_id, branch);

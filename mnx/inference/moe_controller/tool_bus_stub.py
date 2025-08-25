@@ -75,7 +75,9 @@ class ToolBus:
             elif tool_name == "peer_call":
                 result = await self._execute_peer_call(tool)
             else:
-                result = ToolResult(success=False, data={}, error=f"Unknown tool: {tool_name}")
+                result = ToolResult(
+                    success=False, data={}, error=f"Unknown tool: {tool_name}"
+                )
 
             results.append(result)
 
