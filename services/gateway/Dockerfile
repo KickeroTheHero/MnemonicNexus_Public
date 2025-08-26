@@ -1,6 +1,6 @@
 # MnemonicNexus Gateway - Phase A1 Infrastructure
 # Pin base image with digest for security
-FROM python:3.11-slim@sha256:f3b72a3c5b3c0e1b6e6e3e1a3e2e2a1b2c3d4e5f6789abcdef0123456789abcd
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY services/gateway/main.py .
 COPY services/gateway/admin.py .
+COPY services/gateway/auth.py .
+COPY services/gateway/envelope.py .
+COPY services/gateway/tool_bus.py .
 COPY services/gateway/models.py .
 COPY services/gateway/validation.py .
 COPY services/gateway/persistence.py .

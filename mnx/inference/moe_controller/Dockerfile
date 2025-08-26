@@ -1,42 +1,24 @@
 # MoE Controller Production Dockerfile - PR-4
-# 
-# Multi-stage build for optimized production image with tool bus integration
+# Single-stage build to avoid package path issues
 
-FROM python:3.11-slim as builder
-
-WORKDIR /build
-
-# Install system dependencies for building
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY mnx/inference/moe_controller/requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Production stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
-
-# Add local bin to PATH for installed packages
-ENV PATH=/root/.local/bin:$PATH
+# Copy requirements and install Python dependencies directly
+COPY mnx/inference/moe_controller/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source
 COPY mnx/ mnx/
 COPY schemas/ schemas/
-
-# Copy service-specific files
 COPY services/common/ services/common/
 
 # Set Python path to include project root
@@ -60,4 +42,4 @@ ENV DATABASE_URL=postgresql://postgres:postgres@postgres:5432/nexus
 EXPOSE 8000
 
 # Start the controller service
-CMD ["python", "-m", "mnx.inference.moe_controller.main"]
+CMD ["uvicorn", "mnx.inference.moe_controller.main:app", "--host", "0.0.0.0", "--port", "8000"]

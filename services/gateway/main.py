@@ -40,7 +40,6 @@ from validation import (
 app = FastAPI(
     title="MnemonicNexus Gateway",
     description="Gateway API with tenancy and idempotency",
-    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -137,7 +136,6 @@ async def health_check():
 
         return {
             "status": "healthy",
-            "version": "2.0.0",
             "components": {
                 "database": {
                     "status": "up",
@@ -310,7 +308,7 @@ async def root():
     """Root endpoint with service information"""
     return {
         "service": "MnemonicNexus Gateway",
-        "version": "2.0.0",
+        "version": "1.0.0",
         "phase": "A6 - Gateway 409 Handling",
         "status": "ready",
         "documentation": "/docs",

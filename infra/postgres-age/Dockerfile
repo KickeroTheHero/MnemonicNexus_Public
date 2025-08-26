@@ -1,5 +1,5 @@
-# Pin base image with digest for security  
-FROM pgvector/pgvector:pg16@sha256:a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789a
+# Use pgvector base image
+FROM pgvector/pgvector:pg16
 
 # Set build arguments
 ARG AGE_VERSION=PG16/v1.5.0-rc0

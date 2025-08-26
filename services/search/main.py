@@ -26,7 +26,6 @@ from pydantic import BaseModel
 app = FastAPI(
     title="MnemonicNexus Search",
     description="Hybrid search API with multiple search strategies",
-    version="2.0.0",
 )
 
 app.add_middleware(
@@ -128,7 +127,7 @@ async def health_check():
 
         return {
             "status": "healthy",
-            "version": "2.0.0",
+            "version": "1.0.0",
             "supported_modes": list(SEARCH_MODES.keys()),
             "rank_version": RANK_VERSION,
         }
@@ -506,7 +505,7 @@ async def root():
     """Root endpoint with service information"""
     return {
         "service": "MnemonicNexus Hybrid Search",
-        "version": "2.0.0",
+        "version": "1.0.0",
         "status": "ready",
         "endpoints": {
             "search": "/v1/search/hybrid",

@@ -128,7 +128,7 @@ class GatewayMetrics:
 
         # Initialize service info
         self.service_info.info(
-            {"version": "2.0.0-s0", "phase": "S0", "service": "gateway-v2"}
+            {"version": "1.0.0-s0", "phase": "S0", "service": "gateway"}
         )
 
     def record_event_created(self, world_id: str, branch: str, kind: str):

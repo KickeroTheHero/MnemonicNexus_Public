@@ -30,7 +30,7 @@ class DecisionEventEmitter:
 
     def __init__(self):
         self.gateway_url = os.getenv("MNX_GATEWAY_URL", "http://localhost:8080")
-        self.controller_version = os.getenv("CONTROLLER_VERSION", "2.0.0-s0")
+        self.controller_version = os.getenv("CONTROLLER_VERSION", "1.0.0-s0")
         self.timeout = 10.0
 
     def build_decision_record(

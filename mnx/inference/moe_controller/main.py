@@ -11,7 +11,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Response
@@ -60,8 +60,8 @@ app.add_middleware(
 )
 
 # Global service instances
-controller: MoEController | None = None
-monitoring: ServiceMonitoring | None = None
+controller: Optional[MoEController] = None
+monitoring: Optional[ServiceMonitoring] = None
 
 
 class DecisionRequest(BaseModel):
@@ -111,7 +111,7 @@ async def startup_event():
             "LMSTUDIO_MODEL", "lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF"
         )
 
-        lm_client = LMStudioClient(endpoint=lm_studio_endpoint, model=lm_model)
+        lm_client = LMStudioClient()
         logger.info(f"✅ LM Studio client configured: {lm_studio_endpoint}")
 
         # Initialize tool bus
@@ -121,20 +121,15 @@ async def startup_event():
 
         # Initialize event emitter
         gateway_endpoint = os.getenv("GATEWAY_ENDPOINT", "http://localhost:8081")
-        event_emitter = DecisionEventEmitter(gateway_endpoint=gateway_endpoint)
+        event_emitter = DecisionEventEmitter()
         logger.info(f"✅ Event emitter configured: {gateway_endpoint}")
 
         # Initialize JSON validator
         validator = JSONValidator()
         logger.info("✅ JSON schema validator initialized")
 
-        # Initialize controller
-        controller = MoEController(
-            lm_client=lm_client,
-            tool_bus=tool_bus,
-            event_emitter=event_emitter,
-            validator=validator,
-        )
+        # Initialize controller (creates its own component instances)
+        controller = MoEController()
         logger.info("✅ MoE Controller initialized successfully")
 
         logger.info("🎯 MoE Controller Service ready for requests!")
