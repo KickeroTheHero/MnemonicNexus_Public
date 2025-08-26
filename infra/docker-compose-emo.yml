@@ -1,4 +1,4 @@
-# MnemonicNexus V2 - EMO Alpha Base Docker Compose
+# MnemonicNexus - EMO Alpha Base Docker Compose
 # Extends base docker-compose.yml with EMO-specific services
 
 version: '3.8'
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
     labels:
       - "mnx.service=search-hybrid"
-      - "mnx.version=v2.0-alpha"
+      - "mnx.version=alpha"
 
   # Memory-to-EMO Translator Projector
   projector-translator:
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
     labels:
       - "mnx.service=projector-translator"
-      - "mnx.version=v2.0-alpha"
+      - "mnx.version=alpha"
 
   # EMO Publisher Extension (add translator to endpoints)
   publisher:

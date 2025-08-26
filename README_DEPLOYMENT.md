@@ -1,89 +1,224 @@
-# MNX EMO Deployment Guide
+# MNX Deployment Guide
 
-## 🚀 Proper Deployment
+## 🚀 Quick Start
 
-The EMO system has been restructured with proper file placement:
+### Start Services
 
-### **File Structure**
-```
-infra/
-├── docker-compose.yml          # Base services
-├── docker-compose-emo.yml      # EMO extensions (MOVED HERE)
-├── init-extensions.sql         # PostgreSQL extensions
-└── postgres-age/               # AGE setup
-
-projectors/
-├── translator_memory_to_emo/   # PROPERLY STRUCTURED
-│   ├── Dockerfile              # Translator container
-│   ├── translator_memory_to_emo.py  # Main translator code
-│   └── __init__.py             # Python package
-└── sdk/                        # Projector SDK
-```
-
-### **Deployment Commands**
-
-#### Option 1: Combined Deployment (Recommended)
 ```bash
+# Start all services
+make up
+
+# Or manually with docker-compose
 cd infra
-docker-compose -f docker-compose.yml -f docker-compose-emo.yml up -d
+docker-compose up -d
 ```
 
-#### Option 2: Base + EMO Separately  
-```bash
-cd infra
-docker-compose up -d                    # Start base services
-docker-compose -f docker-compose-emo.yml up -d  # Add EMO services
-```
+### Service URLs
 
-### **Service URLs**
-- **Base Gateway**: http://localhost:8081
-- **Search Service**: http://localhost:8087/v1/search/hybrid
+- **Gateway**: http://localhost:8081
+- **Publisher**: http://localhost:8082
+- **Relational Projector**: http://localhost:8083
+- **Graph Projector**: http://localhost:8084
+- **Semantic Projector**: http://localhost:8085
+- **Search Service**: http://localhost:8087
 - **Translator**: http://localhost:8088
 - **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000
+- **Database**: localhost:5433
 
-### **Database Migrations**
+### Database Setup
+
+PostgreSQL with AGE extension is automatically configured via:
+- `infra/init-extensions.sql` - Extension setup
+- `infra/postgres-age/` - AGE-specific configuration
+
+### Health Checks
+
 ```bash
-# Apply EMO migrations to the base nexus database
-psql postgresql://postgres:postgres@localhost:5433/nexus -f ../migrations/010_emo_tables.sql
-psql postgresql://postgres:postgres@localhost:5433/nexus -f ../migrations/011_emo_graph_schema.sql
+# Check all services
+make health
+
+# Or manually check individual services
+curl http://localhost:8081/health  # Gateway
+curl http://localhost:8082/health  # Publisher  
+curl http://localhost:8087/health  # Search
 ```
 
-### **CI Testing**
+## 📊 Monitoring & Metrics
+
+### Prometheus Metrics
+
+```bash
+# View all metrics
+curl http://localhost:8081/metrics  # Gateway metrics
+curl http://localhost:8082/metrics  # Publisher metrics
+
+# Check projector lag
+curl http://localhost:9090 | grep projector_lag_ms
+```
+
+### Health Monitoring
+
+All services expose `/health` endpoints returning:
+```json
+{
+  "status": "ok|degraded|down",
+  "time": "2024-01-15T10:30:00Z",
+  "version": "0.1.0"
+}
+```
+
+## 🗄️ Database Operations
+
+### Apply Migrations
+
+```bash
+# Apply all migrations
+cd migrations
+for file in *.sql; do
+  psql postgresql://postgres:postgres@localhost:5433/nexus -f "$file"
+done
+```
+
+### Backup Commands
+
+```bash
+# Backup event log
+pg_dump postgresql://postgres:postgres@localhost:5433/nexus \
+  --table=events --data-only > events_backup.sql
+
+# Backup lens tables  
+pg_dump postgresql://postgres:postgres@localhost:5433/nexus \
+  --schema=relational_lens > relational_backup.sql
+```
+
+## 🧪 Testing Deployment
+
+### Run Full Test Suite
+
 ```bash
 # Set environment for tests
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/nexus"
 export GATEWAY_URL="http://localhost:8081"
 
-# Run all CI tests
-cd scripts
-python run_all_ci_tests.py
+# Run all tests
+make test
+
+# Run integration tests specifically
+make test-integration
 ```
 
-## ✅ **Fixed Issues** 
+### Baseline Verification
 
-**The docker-compose-emo.yml file was in the wrong place and had structural issues. Here's what was fixed:**
+```bash
+# Generate and verify baseline
+make baseline
 
-### **Before (❌ Incorrect)**
-- File at root level: `docker-compose-emo.yml`
-- Referenced non-existent services: `postgres-v2`, `gateway-v2`, `publisher-v2`
-- Used wrong database: `nexus_v2` (should be `nexus`)
-- Wrong network: `mnx-v2-emo` (should be `nexus-network`)
-- Broken extends references: `docker-compose.yml` (should be in `infra/`)
-- Incorrect build paths and port mappings
+# Check baseline artifacts
+ls artifacts/baseline.sha
+```
 
-### **After (✅ Correct)**
-1. **File placement**: Moved to `infra/docker-compose-emo.yml`
-2. **Service references**: Fixed to use correct base service names (`postgres`, `gateway`, `publisher`)
-3. **Database consistency**: All services now use `nexus` database
-4. **Network alignment**: All services use `nexus-network`
-5. **Build contexts**: Corrected relative paths from `infra/` directory
-6. **Translator structure**: Proper directory structure with Dockerfile
-7. **Port consistency**: Aligned with base service conventions
-8. **Volume references**: Fixed to match base compose file
+### Sample Data & Idempotency Testing
 
-## 🎯 **Next Steps**
+```bash
+# 1. Test successful event creation (should return 201 Created)
+curl -X POST http://localhost:8081/v1/events \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: write-your-secure-key" \
+  -H "X-Correlation-Id: $(uuidgen)" \
+  -H "Idempotency-Key: unique-test-$(date +%s)" \
+  -d @tests/golden/envelopes/sample.json
 
-1. Test the deployment with the corrected compose files
-2. Run CI validation to ensure everything works
-3. Monitor services via Prometheus/Grafana
+# Expected response: 201 Created with event_id, global_seq, received_at
+
+# 2. Test idempotency: Resubmit with same idempotency key (should return 409 Conflict)
+IDEM_KEY="test-duplicate-$(date +%s)"
+
+curl -X POST http://localhost:8081/v1/events \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: write-your-secure-key" \
+  -H "Idempotency-Key: $IDEM_KEY" \
+  -d @tests/golden/envelopes/sample.json
+
+curl -X POST http://localhost:8081/v1/events \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: write-your-secure-key" \
+  -H "Idempotency-Key: $IDEM_KEY" \
+  -d @tests/golden/envelopes/sample.json
+
+# First call: 201 Created, Second call: 409 Conflict
+
+# 3. Test without API key (should return 401 Unauthorized)
+curl -X POST http://localhost:8081/v1/events \
+  -H "Content-Type: application/json" \
+  -d @tests/golden/envelopes/sample.json
+
+# Expected response: 401 Unauthorized
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Key configuration via environment variables:
+
+```bash
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/nexus
+
+# Services
+GATEWAY_PORT=8081
+PUBLISHER_PORT=8082
+SEARCH_PORT=8087
+
+# Observability
+PROMETHEUS_PORT=9090
+LOG_LEVEL=INFO
+```
+
+### Docker Compose Override
+
+Create `infra/docker-compose.override.yml` for local customization:
+
+```yaml
+version: '3.8'
+services:
+  gateway:
+    environment:
+      - LOG_LEVEL=DEBUG
+  publisher:
+    environment:
+      - LOG_LEVEL=DEBUG
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: Check if ports 8081, 8082, 8087, 5433, 9090 are available
+2. **Database connection**: Ensure PostgreSQL container is healthy
+3. **Health checks failing**: Check service logs with `docker-compose logs [service]`
+
+### Reset Environment
+
+```bash
+# Clean shutdown and reset
+make down
+make clean
+docker system prune -f
+make up
+```
+
+### Logs and Debugging
+
+```bash
+# View all service logs
+docker-compose -f infra/docker-compose.yml logs -f
+
+# View specific service logs  
+docker-compose -f infra/docker-compose.yml logs gateway
+docker-compose -f infra/docker-compose.yml logs publisher
+```
+
+---
+
+For architecture details and development workflow, see [README.md](README.md).

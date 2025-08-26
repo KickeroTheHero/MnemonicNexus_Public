@@ -1,5 +1,5 @@
 """
-Admin endpoints for MnemonicNexus V2 Gateway
+Admin endpoints for MnemonicNexus Gateway
 Provides operational management capabilities for projectors and system health
 """
 

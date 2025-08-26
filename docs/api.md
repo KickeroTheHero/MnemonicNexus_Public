@@ -1,17 +1,10 @@
-_Archived from alpha/s0-migration on 2025-01-20; retained for historical context._
+# MnemonicNexus Gateway (Contract)
 
-# MnemonicNexus V2 Gateway (Contract)
-
-**Version**: 0.2.0
-**Generated**: 2025-08-23 20:49:52
-
-Phase A4-A5 Ready - Core event operations with CDC Publisher and multi-lens projector support
 
 ## Base Information
 
 - **OpenAPI Version**: 3.0.3
-- **Title**: MnemonicNexus V2 Gateway (Contract)
-- **Version**: 0.2.0
+- **Title**: MnemonicNexus Gateway (Contract)
 
 ## Endpoints
 

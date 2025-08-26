@@ -29,5 +29,5 @@ docker run --rm ${IMAGE_NAME}:${TAG} psql --version
 echo "🎯 Image ready: ${IMAGE_NAME}:${TAG}"
 echo "💡 Next steps:"
 echo "   1. Update docker-compose.yml to use this image"
-echo "   2. Run v2-migrate-up to test AGE integration"
+echo "   2. Run migrations to test AGE integration"
 echo "   3. Validate graph operations work correctly"

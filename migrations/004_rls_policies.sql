@@ -1,7 +1,7 @@
--- Migration: v2_004_rls_policies.sql
+-- Migration: 004_rls_policies.sql
 -- Purpose: Implement Row Level Security policies for multi-tenant isolation
 -- Phase: A (Critical Security)
--- Date: 2025-01-20
+
 
 BEGIN;
 
@@ -9,7 +9,7 @@ BEGIN;
 -- ROW LEVEL SECURITY POLICIES IMPLEMENTATION
 -- ============================================================================
 
--- Note: Tables already have RLS enabled via v2_003_lens_foundation.sql
+-- Note: Tables already have RLS enabled via 003_lens_foundation.sql
 -- This migration adds the actual policies for tenant isolation
 
 -- ============================================================================

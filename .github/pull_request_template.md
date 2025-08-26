@@ -1,37 +1,104 @@
 ## Description
-Brief description of changes made.
+<!-- Brief description of the changes -->
 
 ## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
+<!-- Mark with [x] -->
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
+- [ ] Performance improvement
+- [ ] Refactoring (no functional changes)
 
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Golden replay tests pass
-- [ ] Baseline hashes remain stable (if applicable)
-- [ ] Manual testing completed
+## Contracts Touched
+<!-- Mark with [x] all that apply -->
+- [ ] OpenAPI specification (`schemas/openapi.json`)
+- [ ] JSON schemas (`schemas/json/`)
+- [ ] Database schema (migrations)
+- [ ] API endpoints (new/modified)
+- [ ] Event envelope structure
+- [ ] Configuration format
 
-## Determinism & Replay
-- [ ] Changes maintain replay determinism
-- [ ] New functionality includes deterministic tests
-- [ ] Baseline snapshots updated if needed
-- [ ] Golden fixtures remain valid
+### Contract Changes Details
+<!-- If any contracts were touched, describe the changes -->
 
-## Code Quality
-- [ ] Code follows project style guidelines
-- [ ] Linting passes (ruff, black)
-- [ ] Type checking passes (mypy)
-- [ ] Documentation updated
+## Tests Added
+<!-- Mark with [x] all that apply -->
+- [ ] Unit tests
+- [ ] Integration tests  
+- [ ] Golden baseline tests
+- [ ] Performance tests
+- [ ] Security/RLS tests
+- [ ] Manual testing performed
+
+### Test Coverage
+<!-- Describe what was tested and how -->
+
+## Determinism Risk Assessment
+<!-- Mark with [x] and explain -->
+- [ ] **NONE** - No impact on determinism
+- [ ] **LOW** - Changes isolated to non-deterministic components
+- [ ] **MEDIUM** - Changes to event processing but determinism preserved
+- [ ] **HIGH** - Changes affect event ordering, replay, or hash generation
+
+### Determinism Impact Details
+<!-- If risk is MEDIUM or HIGH, explain mitigation -->
+
+## Rollback Plan
+<!-- Describe how to rollback if issues occur -->
+- [ ] Simple revert (no data migration required)
+- [ ] Requires data migration rollback
+- [ ] Requires service restart
+- [ ] Requires coordinated rollback
+
+### Rollback Steps
+1. 
+2. 
+3. 
+
+## Security Considerations
+<!-- Mark with [x] if applicable -->
+- [ ] Changes affect authentication/authorization
+- [ ] Changes affect RLS policies
+- [ ] Changes affect API key handling
+- [ ] Changes affect tenant isolation
+- [ ] Security review required
+
+## Performance Impact
+<!-- Mark with [x] -->
+- [ ] No performance impact expected
+- [ ] Minor performance improvement
+- [ ] Minor performance degradation (acceptable)
+- [ ] Significant performance change (requires review)
+
+## Deployment Notes
+<!-- Any special deployment considerations -->
 
 ## Checklist
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
+<!-- Mark with [x] before submitting -->
+- [ ] Code follows project style guidelines
+- [ ] Self-review of code completed
+- [ ] Tests pass locally (`make test`)
+- [ ] Schemas validate (`make schemas-validate`)
+- [ ] Baseline generation succeeds (`make baseline`)
+- [ ] Documentation updated (if applicable)
+- [ ] Breaking changes documented in commit message
+- [ ] Rollback plan documented above
+
+## Related Issues
+<!-- Link to related issues using #issue_number -->
+Closes #
+Related to #
+
+---
+
+### For Reviewers
+
+**Review Checklist:**
+- [ ] Code quality and style
+- [ ] Test coverage adequate
+- [ ] Determinism impact assessed
+- [ ] Security implications reviewed
+- [ ] Performance impact acceptable
+- [ ] Documentation updated
+- [ ] Rollback plan viable

@@ -1,12 +1,12 @@
 -- Migration: 004_rls_policies_basic.sql
 -- Purpose: Implement Row Level Security policies for existing tables only
 -- Phase: A (Critical Security)
--- Date: 2025-01-20
+
 --
 -- ⚠️  PLANNED OBSOLESCENCE WARNING ⚠️
 -- This migration applies RLS policies only to existing tables.
 -- Will be replaced by comprehensive 004_rls_policies.sql when
--- semantic and graph lens schemas are complete (Phase B1).
+-- semantic and graph lens schemas are complete.
 -- 
 -- Replacement triggers:
 -- - All lens schemas (rel, sem, graph) are implemented

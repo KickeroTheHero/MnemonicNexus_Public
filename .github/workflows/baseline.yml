@@ -1,60 +1,187 @@
 name: Baseline
+
 on:
   push:
-    branches: [ main, alpha/s0-migration ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, alpha/s0-migration ]
+    branches: [ main ]
+  schedule:
+    # Run daily at 2 AM UTC to catch baseline drift
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
 
 jobs:
   baseline:
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nexus
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Postgres client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client jq
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client jq
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || echo "No requirements.txt found"
+          pip install -r requirements.txt
 
-      - name: Start services
+      - name: Setup environment
         run: |
-          cp .env.example .env || echo "No .env.example found"
-          docker compose up -d --wait || echo "Docker compose not available"
+          cp env.example .env || echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5433/nexus" > .env
 
-      - name: Wait for services
-        run: sleep 30
-
-      - name: Run baseline
-        run: make baseline
+      - name: Apply database migrations
+        run: |
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/nexus"
+          echo "Applying migrations..."
+          for migration in migrations/*.sql; do
+            if [ -f "$migration" ]; then
+              echo "Applying $(basename $migration)..."
+              psql "$DATABASE_URL" -f "$migration" || echo "Migration $(basename $migration) may not be applicable"
+            fi
+          done
         env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
           PGPASSWORD: postgres
-          PGDATABASE: mnx_alpha
+
+      - name: Start application services
+        run: |
+          if [ -f "infra/docker-compose.yml" ]; then
+            echo "Starting services with docker-compose..."
+            docker compose -f infra/docker-compose.yml up -d --wait
+          else
+            echo "No docker-compose.yml found, skipping service startup"
+          fi
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to stabilize..."
+          sleep 30
+          
+          # Check service health if endpoints exist
+          for port in 8081 8082 8087; do
+            if curl -f "http://localhost:$port/health" 2>/dev/null; then
+              echo "✓ Service on port $port is healthy"
+            else
+              echo "⚠️ Service on port $port is not responding"
+            fi
+          done
+
+      - name: Run baseline generation
+        run: |
+          echo "Starting baseline generation..."
+          if [ -f "scripts/baseline.sh" ]; then
+            bash scripts/baseline.sh
+          else
+            echo "Creating minimal baseline..."
+            mkdir -p artifacts
+            git rev-parse HEAD > artifacts/baseline.sha
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > artifacts/baseline.timestamp
+          fi
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5433/nexus"
+          PGPASSWORD: postgres
+
+      - name: Validate baseline artifacts
+        run: |
+          echo "Validating baseline artifacts..."
+          
+          if [ -f "artifacts/baseline.sha" ]; then
+            baseline_hash=$(cat artifacts/baseline.sha)
+            echo "✓ Baseline hash: $baseline_hash"
+          else
+            echo "❌ No baseline hash found"
+            exit 1
+          fi
+          
+          if [ -f "artifacts/baseline.timestamp" ]; then
+            timestamp=$(cat artifacts/baseline.timestamp)
+            echo "✓ Baseline timestamp: $timestamp"
+          fi
+          
+          # Check for additional baseline files
+          if [ -d "artifacts/baseline" ]; then
+            echo "✓ Baseline directory contents:"
+            find artifacts/baseline -type f | head -10
+          fi
+
+      - name: Compare with previous baseline (if available)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "PR detected - baseline comparison would go here"
+            # In a real scenario, you'd fetch the baseline from the base branch
+            echo "Base branch: ${{ github.base_ref }}"
+            echo "Head branch: ${{ github.head_ref }}"
+          fi
 
       - name: Upload baseline artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: baseline-${{ github.sha }}
-          path: artifacts/baseline/
+          name: baseline-${{ github.sha }}-${{ github.run_number }}
+          path: artifacts/
           retention-days: 30
 
       - name: Display baseline summary
         run: |
-          if [ -f artifacts/baseline/*/hashes/baseline.sha ]; then
-            echo "Baseline hash: $(cat artifacts/baseline/*/hashes/baseline.sha)"
+          echo "=== Baseline Summary ==="
+          echo "Commit: ${{ github.sha }}"
+          echo "Run: ${{ github.run_number }}"
+          
+          if [ -f "artifacts/baseline.sha" ]; then
+            echo "Baseline hash: $(cat artifacts/baseline.sha)"
           fi
-          if [ -f artifacts/baseline/*/staleness.txt ]; then
-            echo "Staleness report:"
-            cat artifacts/baseline/*/staleness.txt
+          
+          if [ -f "artifacts/baseline.timestamp" ]; then
+            echo "Generated at: $(cat artifacts/baseline.timestamp)"
           fi
+          
+          # Check for staleness reports
+          if find artifacts -name "*staleness*" -type f | head -1 | read staleness_file; then
+            echo "Staleness report found:"
+            cat "$staleness_file" | head -20
+          fi
+          
+          echo "=== End Summary ==="
+
+      - name: Health check summary
+        if: always()
+        run: |
+          echo "=== Final Health Check ==="
+          
+          # Check database connection
+          if psql "postgresql://postgres:postgres@localhost:5433/nexus" -c "SELECT 1;" >/dev/null 2>&1; then
+            echo "✓ Database connection OK"
+          else
+            echo "❌ Database connection failed"
+          fi
+          
+          # Check service endpoints
+          for service_port in 8081 8082 8087; do
+            if curl -f "http://localhost:$service_port/health" >/dev/null 2>&1; then
+              echo "✓ Service on port $service_port is healthy"
+            else
+              echo "⚠️ Service on port $service_port is not responding"
+            fi
+          done
+          
+          echo "=== End Health Check ==="

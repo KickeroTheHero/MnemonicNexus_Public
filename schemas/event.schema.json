@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "MnemonicNexus V2 Event Envelope",
-  "description": "V2 event envelope with comprehensive tenancy and audit fields",
+  "title": "MnemonicNexus Event Envelope",
+  "description": "Event envelope with comprehensive tenancy and audit fields",
   "type": "object",
   "required": [
     "world_id",
@@ -14,7 +14,7 @@
     "world_id": {
       "type": "string",
       "format": "uuid",
-      "description": "Tenancy key (required in V2)"
+      "description": "Tenancy key (required)"
     },
     "branch": {
       "type": "string",

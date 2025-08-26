@@ -29,7 +29,10 @@ A clear and concise description of what you expected to happen.
 **Additional context**
 Add any other context about the problem here.
 
-**Determinism Check**
+**Determinism & Idempotency Check**
 - [ ] Issue reproduces consistently
 - [ ] Issue affects replay determinism
 - [ ] Issue affects baseline hashes
+- [ ] Issue affects idempotency guarantees (409 handling)
+- [ ] Issue affects multi-tenant isolation
+- [ ] Issue affects cross-branch consistency

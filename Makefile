@@ -54,7 +54,7 @@ type-check:
 
 schemas-validate:
 	@echo "📋 Validating schemas..."
-	$(PY) -m pytest siren/validators/ -v
+	$(PY) scripts/validate_schemas.py
 	@echo "✅ Schema validation complete"
 
 # Baseline and replay
@@ -76,7 +76,7 @@ replay:
 # Health check targets
 health:
 	@echo "🔍 Running health checks..."
-	@bash scripts/health_check.sh
+	@$(PY) scripts/health_check.py || bash scripts/health_check.sh
 
 metrics:
 	@echo "📊 Service metrics:"

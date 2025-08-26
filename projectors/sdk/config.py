@@ -8,7 +8,7 @@ class ProjectorConfig(BaseSettings):
     """Base configuration for all projectors"""
 
     # Database
-    database_url: str = "postgresql://postgres:postgres@postgres-v2:5432/nexus_v2"
+    database_url: str = "postgresql://postgres:postgres@postgres:5432/nexus"
 
     # HTTP Server
     port: int = 8000

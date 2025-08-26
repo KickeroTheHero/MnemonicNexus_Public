@@ -1,16 +1,382 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "MnemonicNexus V2 Gateway (Contract)",
-    "version": "2.0.0-dev",
-    "description": "V2 API contracts - see docs/openapi.yaml for complete specification"
+    "title": "MnemonicNexus Gateway API",
+    "version": "2.0.0",
+    "description": "Event-sourced system with multi-lens projections for relational, semantic, and graph data",
+    "contact": {
+      "name": "MNX Development Team"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
   },
-  "externalDocs": {
-    "description": "Complete OpenAPI specification",
-    "url": "./docs/openapi.yaml"
+  "servers": [
+    {
+      "url": "http://localhost:8081",
+      "description": "Development server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Get service information",
+        "description": "Returns basic service information and available endpoints",
+        "operationId": "getServiceInfo",
+        "tags": ["Service"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Check service health and dependencies",
+        "operationId": "healthCheck",
+        "tags": ["Monitoring"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "description": "Get Prometheus-format metrics",
+        "operationId": "getMetrics",
+        "tags": ["Monitoring"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "post": {
+        "summary": "Create event",
+        "description": "Append event to event log with idempotency and validation",
+        "operationId": "createEvent",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Idempotency key for duplicate detection",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "description": "Correlation ID for request tracing",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - duplicate event (idempotency)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   },
-  "paths": {},
   "components": {
-    "schemas": {}
-  }
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key authentication using Bearer token"
+      }
+    },
+    "schemas": {
+      "ServiceInfo": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "example": "MnemonicNexus Gateway"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0.0"
+          },
+          "phase": {
+            "type": "string",
+            "example": "A6 - Gateway 409 Handling"
+          },
+          "status": {
+            "type": "string",
+            "example": "ready"
+          },
+          "documentation": {
+            "type": "string",
+            "example": "/docs"
+          },
+          "health": {
+            "type": "string",
+            "example": "/health"
+          },
+          "endpoints": {
+            "type": "object",
+            "properties": {
+              "events": {
+                "type": "string",
+                "example": "/v1/events"
+              },
+              "metrics": {
+                "type": "string",
+                "example": "/metrics"
+              },
+              "admin": {
+                "type": "string",
+                "example": "/admin"
+              }
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "timestamp"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "degraded", "down"],
+            "description": "Overall health status"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Health check timestamp"
+          },
+          "version": {
+            "type": "string",
+            "description": "Service version"
+          },
+          "dependencies": {
+            "type": "object",
+            "description": "Status of service dependencies",
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["ok", "degraded", "down"]
+            }
+          }
+        }
+      },
+      "EventEnvelope": {
+        "type": "object",
+        "required": ["world_id", "branch", "kind", "payload", "by"],
+        "properties": {
+          "world_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tenancy key for isolation"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name for DVCS-like isolation"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Event type identifier (e.g., 'note.created')"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Event-specific data"
+          },
+          "by": {
+            "type": "object",
+            "required": ["agent"],
+            "properties": {
+              "agent": {
+                "type": "string",
+                "description": "Agent identifier"
+              }
+            }
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Event envelope version"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Client-supplied logical time"
+          },
+          "causation_id": {
+            "type": "string",
+            "description": "Event causation chain identifier"
+          }
+        }
+      },
+      "EventAccepted": {
+        "type": "object",
+        "required": ["event_id", "global_seq", "received_at", "correlation_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique event identifier"
+          },
+          "global_seq": {
+            "type": "integer",
+            "description": "Global sequence number"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Server receipt timestamp"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Request correlation ID"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["detail"],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Request correlation ID"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Service",
+      "description": "Service information and status"
+    },
+    {
+      "name": "Events",
+      "description": "Event ingestion and management"
+    },
+    {
+      "name": "Monitoring",
+      "description": "Health checks and metrics"
+    }
+  ]
 }

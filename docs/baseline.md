@@ -1,7 +1,7 @@
 # MNX S0 Baseline Documentation
 
 **Version**: Alpha S0  
-**Date**: 2024-12-19  
+  
 **Commit**: `$(git rev-parse HEAD)`
 
 ## Overview

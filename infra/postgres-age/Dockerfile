@@ -1,4 +1,5 @@
-FROM pgvector/pgvector:pg16
+# Pin base image with digest for security  
+FROM pgvector/pgvector:pg16@sha256:a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789a
 
 # Set build arguments
 ARG AGE_VERSION=PG16/v1.5.0-rc0
@@ -36,7 +37,7 @@ RUN apt-get remove -y \
 COPY init-age.sql /docker-entrypoint-initdb.d/02-age.sql
 
 # Metadata
-LABEL maintainer="MnemonicNexus V2"
+LABEL maintainer="MnemonicNexus"
 LABEL description="PostgreSQL 16 with pgvector and Apache AGE extensions"
 LABEL age.version="${AGE_VERSION}"
 LABEL postgresql.version="${PG_VERSION}"

@@ -15,3 +15,28 @@ MNX_checklist.md,docs/archive/MNX_checklist.md,Moved completed checklist to arch
 siren/checklists/v2-development-progress.md,docs/archive/development-progress.md,Moved to archive and removed v2 from filename,2025-01-21
 siren/phase_prompts/CANCELED_PHASE-A7.md,docs/archive/CANCELED_PHASE-A7.md,Moved canceled phase to archive,2025-01-21
 **/__pycache__/,[DELETED],Removed all Python bytecode cache directories,2025-01-21
+docs/archive,_archive/docs-archive,Moved archive to git-ignored directory for PR1 layout surgery,2025-01-21
+docs/EMO_SPECIFICATION.md,_archive/EMO_SPECIFICATION.md,Moved verbose specification to archive for PR1 layout surgery,2025-01-21
+docs/EMO_SYSTEM_TEST_PLAN.md,_archive/EMO_SYSTEM_TEST_PLAN.md,Moved verbose test plan to archive for PR1 layout surgery,2025-01-21
+docs/EMO_TESTING_GUIDE.md,_archive/EMO_TESTING_GUIDE.md,Moved verbose testing guide to archive for PR1 layout surgery,2025-01-21
+docs/STRATUM_REVIEW_RESPONSE.md,_archive/STRATUM_REVIEW_RESPONSE.md,Moved verbose review response to archive for PR1 layout surgery,2025-01-21
+docs/TESTING_ANALYSIS_EXECUTIVE_SUMMARY.md,_archive/TESTING_ANALYSIS_EXECUTIVE_SUMMARY.md,Moved verbose testing analysis to archive for PR1 layout surgery,2025-01-21
+docs/TESTING_GAPS_ANALYSIS.md,_archive/TESTING_GAPS_ANALYSIS.md,Moved verbose testing gaps analysis to archive for PR1 layout surgery,2025-01-21
+docs/api.md,_archive/api.md,Moved verbose API documentation to archive for PR1 layout surgery,2025-01-21
+Public Alpha Repo State.md,_archive/Public Alpha Repo State.md,Moved verbose planning document to archive for PR1 layout surgery,2025-01-21
+Public Alpha Repo Verification,_archive/Public Alpha Repo Verification,Moved verification planning directory to archive for PR1 layout surgery,2025-01-21
+PUBLIC_READINESS_SUMMARY.md,_archive/PUBLIC_READINESS_SUMMARY.md,Moved verbose readiness summary to archive for PR1 layout surgery,2025-01-21
+README_EMO_IMPLEMENTATION.md,_archive/README_EMO_IMPLEMENTATION.md,Moved verbose implementation details to archive for PR1 layout surgery,2025-01-21
+CONTRIBUTING.md,_archive/CONTRIBUTING.md,Moved verbose contributing guidelines to archive for PR1 layout surgery,2025-01-21
+mnx,_archive/mnx,Moved mnx module to archive for PR1 layout surgery,2025-01-21
+monitoring,_archive/monitoring,Moved monitoring directory to archive for PR1 layout surgery,2025-01-21
+projectors/translator_memory_to_emo,_archive/translator_memory_to_emo,Moved translator projector to archive for PR1 layout surgery,2025-01-21
+_archive/monitoring,monitoring,Restored monitoring - needed for Prometheus scrape configs,2025-01-21
+_archive/mnx,mnx,Restored mnx module - contains active moe_controller implementation,2025-01-21
+_archive/translator_memory_to_emo,projectors/translator_memory_to_emo,Restored translator projector - referenced in monitoring,2025-01-21
+_archive/api.md,docs/api.md,Restored comprehensive API docs - documents implemented endpoints,2025-01-21
+scripts/ci_emo_lineage_integrity.py,tests/ci/test_emo_lineage_integrity.py,Reorganize CI tests to proper test directory,$(date +%Y-%m-%d) 
+scripts/ci_emo_translator_parity.py,tests/ci/test_emo_translator_parity.py,Reorganize CI tests to proper test directory,$(date +%Y-%m-%d) 
+scripts/performance_test.py,tests/performance/test_comprehensive_performance.py,Consolidate performance tests,$(date +%Y-%m-%d) 
+scripts/test_emo_capabilities.py,tests/e2e/test_emo_capabilities.py,Move comprehensive tests to e2e directory,$(date +%Y-%m-%d) 
+scripts/quick_emo_validation.py,tests/validation/test_emo_system_validation.py,Move validation tests to proper directory,$(date +%Y-%m-%d) 

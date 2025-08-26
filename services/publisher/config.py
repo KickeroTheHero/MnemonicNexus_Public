@@ -11,7 +11,7 @@ class PublisherConfig:
         # Database
         self.database_url: str = os.getenv(
             "CDC_DATABASE_URL",
-            "postgresql://postgres:postgres@postgres-v2:5432/nexus_v2",
+            "postgresql://postgres:postgres@postgres:5432/nexus",
         )
 
         # Polling behavior
@@ -26,9 +26,9 @@ class PublisherConfig:
             "CDC_PROJECTOR_ENDPOINTS",
             ",".join(
                 [
-                    "http://projector-rel-v2:8000/events",
-                    # "http://projector-sem-v2:8000/events",  # semantic projector quarantined - vector format issue
-                    # "http://projector-graph-v2:8000/events",  # graph projector quarantined - AGE connection issue
+                    "http://projector-rel:8000/events",
+                    # "http://projector-sem:8000/events",  # semantic projector quarantined - vector format issue
+                    # "http://projector-graph:8000/events",  # graph projector quarantined - AGE connection issue
                 ]
             ),
         )
@@ -51,4 +51,4 @@ class PublisherConfig:
         self.metrics_port: int = int(os.getenv("CDC_METRICS_PORT", "9100"))
 
         # Service identity
-        self.publisher_id: str = os.getenv("CDC_PUBLISHER_ID", "cdc-publisher-v2")
+        self.publisher_id: str = os.getenv("CDC_PUBLISHER_ID", "cdc-publisher")

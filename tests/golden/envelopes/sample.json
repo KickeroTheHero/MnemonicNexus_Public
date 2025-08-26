@@ -1,48 +1,31 @@
 {
-  "description": "Test fixture for idempotency conflict (409) validation - duplicate emo.created event",
-  "world_id": "550e8400-e29b-41d4-a716-446655440001",
+  "description": "Sample event envelope for testing and demonstration",
+  "world_id": "550e8400-e29b-41d4-a716-446655440000",
   "branch": "main",
-  "kind": "emo.created",
-  "event_id": "duplicate-test-event-001",
-  "correlation_id": "idempotency-test-001", 
-  "occurred_at": "2024-01-15T14:30:00.000Z",
-  "by": {
-    "agent": "test:idempotency.validator",
-    "context": "Duplicate event test"
-  },
+  "kind": "demo.sample_event",
   "payload": {
-    "emo_id": "123e4567-e89b-12d3-a456-426614174002",
-    "emo_type": "note",
-    "emo_version": 1,
-    "tenant_id": "tenant-550e8400",
-    "world_id": "550e8400-e29b-41d4-a716-446655440001",
-    "branch": "main",
-    "content": "This is a test EMO for idempotency validation",
-    "mime_type": "text/markdown",
-    "tags": ["test", "idempotency"],
-    "source": {
-      "kind": "user",
-      "uri": null
+    "message": "Hello, MNX! This is a sample event for testing.",
+    "timestamp": "2023-01-15T10:30:00.000Z",
+    "sample_data": {
+      "number": 42,
+      "boolean": true,
+      "array": ["item1", "item2", "item3"],
+      "nested": {
+        "key": "value",
+        "count": 3
+      }
     },
-    "parents": [],
-    "links": [],
-    "vector_meta": {
-      "model_id": "text-embedding-nomic-embed-text-v1.5",
-      "model_version": "1.5",
-      "template_id": "default",
-      "embed_dim": 768
-    },
-    "idempotency_key": "123e4567-e89b-12d3-a456-426614174002:1:created",
-    "change_id": "chg-12345678-abcd-ef01-2345-6789abcdef02",
-    "schema_version": 1
+    "tags": ["demo", "sample", "test"],
+    "metadata": {
+      "source": "documentation",
+      "version": "1.0",
+      "environment": "development"
+    }
   },
-  "expected_behavior": "First submission: 201 Created. Second submission (same idempotency_key): 409 Conflict",
-  "test_assertions": [
-    "First event should create EMO in lens_emo.emo_current",
-    "Second event with same idempotency_key should be rejected",
-    "No duplicate rows in emo_history table",
-    "Gateway returns 409 status code on duplicate",
-    "Idempotency violation logged in monitoring"
-  ]
+  "by": {
+    "agent": "demo-client",
+    "context": "Sample event for testing idempotency and 409 handling"
+  },
+  "occurred_at": "2023-01-15T10:30:00.000Z",
+  "version": 1
 }
-

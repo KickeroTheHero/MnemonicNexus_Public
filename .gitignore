@@ -1,28 +1,110 @@
-# S0 Minimal .gitignore
+# MNX .gitignore
 
-# Environment files
+# Environment files (keep env.example and env.production tracked)
 .env
 .env.local
+.env.development
+.env.test
+.env.staging
 
 # Artifacts and generated files
 artifacts/
 baseline/
 siren/
+_archive/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+junit.xml
+test-results/
+test-reports/
+ci_report_*.txt
+snapshot_*.json
+*.log
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
+*.pyw
 *.egg-info/
-.coverage
-htmlcov/
+.eggs/
+dist/
+build/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
 
 # Virtual environments
 .venv/
 venv/
 ENV/
+env/
+.virtualenv
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+docker-data/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+pgdata/
+*.sql.backup
+
+# Logs
+logs/
+*.log
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Monitoring and metrics
+prometheus-data/
+grafana-data/
+metrics/
+
+# Security
+*.key
+*.pem
+*.crt
+*.csr
+secrets/
+.secrets/
+id_rsa*
+*.p12
+*.pfx
+
+# SBOM and security scanning
+sbom-*.json
+*.sarif
+security-scan-results/
+
+# Performance test outputs
+performance-reports/
+benchmark-results/
+load-test-results/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
 
 # Editor and IDE
 .vscode/
@@ -30,11 +112,50 @@ ENV/
 *.swp
 *.swo
 *~
+.vim/
+.nvimrc
+.editorconfig.local
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 .directory
+*.lnk
 
-# Docker
-.dockerignore
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Documentation builds
+docs/_build/
+docs/site/
+.readthedocs/
+
+# Local configuration overrides
+local_settings.py
+.local/
+local.env
+
+# MNX-specific artifacts
+baseline_*.sha
+*.baseline
+determinism_*.json
+lineage_*.json
+replay_state_*.json
+projector_*.log
+gateway_*.log
+publisher_*.log
+health_check_*.log

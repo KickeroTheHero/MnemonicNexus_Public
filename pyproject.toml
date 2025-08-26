@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mnx"
 version = "0.1.0"
-description = "MNX (MneumonicNexus) - Alpha S0 Baseline"
+description = "MNX (MnemonicNexus) - Alpha S0 Baseline"
 authors = [{name = "MNX Team"}]
 readme = "README.md"
 requires-python = ">=3.11"

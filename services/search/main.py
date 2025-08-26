@@ -1,5 +1,5 @@
 """
-MnemonicNexus V2 Hybrid Search Service
+MnemonicNexus Hybrid Search Service
 
 Implements /v1/search/hybrid endpoint with multiple search modes:
 - relational_only: SQL-based search on EMO content/metadata
@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI(
-    title="MnemonicNexus V2 Search",
+    title="MnemonicNexus Search",
     description="Hybrid search API with multiple search strategies",
     version="2.0.0",
 )
@@ -49,7 +49,7 @@ SEARCH_MODES = {
     "hybrid+graph_expansion": "Hybrid + graph traversal expansion",
 }
 
-RANK_VERSION = "v2.0-alpha"  # Stable rank versioning for reproducible results
+RANK_VERSION = "alpha"  # Stable rank versioning for reproducible results
 
 
 class SearchRequest(BaseModel):
@@ -93,7 +93,7 @@ async def startup_event():
     global db_pool, http_client
 
     database_url = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:postgres@postgres-v2:5432/nexus_v2"
+        "DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/nexus"
     )
 
     try:
@@ -505,7 +505,7 @@ async def get_search_modes():
 async def root():
     """Root endpoint with service information"""
     return {
-        "service": "MnemonicNexus V2 Hybrid Search",
+        "service": "MnemonicNexus Hybrid Search",
         "version": "2.0.0",
         "status": "ready",
         "endpoints": {

@@ -1,14 +1,19 @@
 # S0 Test Allowlist - Keep these on main branch
-# PR-6 initial allowlist for offline testing
+# Updated test structure for better organization
 
 # Core offline test suites (no network dependencies)
-tests/replay/         # Golden replay harness - S0 compliance validation
-tests/golden/         # Golden test YAML files - determinism validation
+tests/unit/             # Fast unit tests - no external dependencies
+tests/validation/       # System and schema validation tests
+tests/golden/           # Golden test YAML files - determinism validation
+tests/replay/           # Golden replay harness - S0 compliance validation
+tests/ci/               # CI-specific tests for Alpha Base validation
 
-# Future unit tests (to be added as needed)
-# tests/unit/schemas/   # Schema validation unit tests
-# tests/unit/controller/ # Controller logic unit tests  
-# tests/toolbus/offline/ # Tool bus offline behavior (timeouts/caps/degrade)
+# Integration and performance tests (require services)
+tests/integration/      # Integration tests requiring services to be running
+tests/performance/      # Performance tests (marked with @pytest.mark.performance)
+tests/e2e/              # End-to-end comprehensive test suites
 
-# Integration tests remain on alpha/s0-migration branch
-# Network-dependent tests marked with @pytest.mark.network stay on migration branch
+# Test execution
+# Use: python scripts/run_tests.py --quick for fast validation
+# Use: python scripts/run_tests.py --ci for CI validation
+# Network-dependent tests marked with @pytest.mark.network

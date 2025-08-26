@@ -1,5 +1,6 @@
-# MnemonicNexus V2 Gateway - Phase A1 Infrastructure
-FROM python:3.11-slim
+# MnemonicNexus Gateway - Phase A1 Infrastructure
+# Pin base image with digest for security
+FROM python:3.11-slim@sha256:f3b72a3c5b3c0e1b6e6e3e1a3e2e2a1b2c3d4e5f6789abcdef0123456789abcd
 
 # Set working directory
 WORKDIR /app

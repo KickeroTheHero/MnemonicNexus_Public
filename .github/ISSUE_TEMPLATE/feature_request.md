@@ -19,7 +19,10 @@ A clear and concise description of any alternative solutions or features you've 
 **Additional context**
 Add any other context or screenshots about the feature request here.
 
-**Determinism Impact**
+**Determinism & Idempotency Impact**
 - [ ] Feature maintains replay determinism
 - [ ] Feature affects baseline hashes (documented)
+- [ ] Feature preserves idempotency guarantees
+- [ ] Feature maintains multi-tenant isolation
 - [ ] Feature requires new test fixtures
+- [ ] Feature affects schema contracts
