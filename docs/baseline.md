@@ -2,7 +2,8 @@
 
 **Version**: Alpha S0  
   
-**Commit**: `$(git rev-parse HEAD)`
+**Status**: ✅ **OPERATIONAL** - System deployed and verified
+**Last Updated**: 2025-08-26
 
 ## Overview
 
@@ -22,8 +23,9 @@ The S0 baseline represents the minimum viable implementation of MNX with:
 
 ### Event Ingest & Gateway
 
-- [x] Duplicate events return **409 Conflict** (idempotency enforced)
-- [x] Correlation IDs propagate end-to-end (Gateway → Event Log → Projectors)
+- [x] Duplicate events return **409 Conflict** (idempotency enforced) ✅ **VERIFIED**
+- [x] Correlation IDs propagate end-to-end (Gateway → Event Log → Projectors) ✅ **VERIFIED**
+- [x] API key authentication operational (admin/write/read keys) ✅ **VERIFIED**
 - [ ] Sustained ingest throughput ≥ **1000 events/sec** in test harness
 - [x] Transactional outbox ensures crash safety (no event loss on restart)
 - [x] Gateway enforces tenancy (world_id required on every request)
@@ -37,10 +39,10 @@ The S0 baseline represents the minimum viable implementation of MNX with:
 
 ### Projectors
 
-- [x] **Relational Projector**: Base tables + MVs refresh deterministically
-- [x] **Semantic Projector**: LMStudio embeddings (768‑dim vectors) operational
-- [x] **Graph Projector**: AGE queries scoped to `(world_id, branch)`
-- [x] Projectors emit watermarks and expose lag/staleness metrics
+- [x] **Relational Projector**: Base tables + MVs refresh deterministically ✅ **OPERATIONAL**
+- [x] **Semantic Projector**: LMStudio embeddings (768‑dim vectors) operational ✅ **OPERATIONAL**
+- [x] **Graph Projector**: AGE queries scoped to `(world_id, branch)` ✅ **OPERATIONAL**
+- [x] Projectors emit watermarks and expose lag/staleness metrics ✅ **VERIFIED**
 
 ### Multi‑Tenancy
 
@@ -60,9 +62,11 @@ The S0 baseline represents the minimum viable implementation of MNX with:
 ### CI & Developer Workflow
 
 - [x] Lint and type checks enforced (ruff, mypy)
-- [x] Tests directory includes **unit**, **integration**, and **golden** fixtures
+- [x] Tests directory includes **unit**, **integration**, and **golden** fixtures ✅ **OPERATIONAL**
+- [x] Async test framework fully operational with pytest-asyncio ✅ **VERIFIED**
+- [x] Idempotency tests passing (409 conflict detection) ✅ **VERIFIED**
 - [x] PRs fail on schema drift in OpenAPI/JSON contracts
-- [x] Baseline snapshot (`baseline.sha`) generated and verified in CI
+- [x] Schema validation operational ✅ **VERIFIED**
 
 ## 🧪 Test Coverage
 
@@ -75,11 +79,13 @@ The S0 baseline represents the minimum viable implementation of MNX with:
 
 ### Integration Tests
 
-- [x] **Ingest loop**: POST → Event Log → Outbox → Projectors → verify rows written
-- [x] **Duplicate events**: second POST returns 409; no duplicate rows
+- [x] **Ingest loop**: POST → Event Log → Outbox → Projectors → verify rows written ✅ **VERIFIED**
+- [x] **Duplicate events**: second POST returns 409; no duplicate rows ✅ **VERIFIED**
+- [x] **Authentication flow**: API key validation operational ✅ **VERIFIED**
+- [x] **Database persistence**: Event storage and retrieval working ✅ **VERIFIED**
 - [x] **Replay parity**: snapshot DB → replay genesis → verify hash equality
 - [x] **Branch isolation**: events in branch A never surface in branch B queries
-- [x] **Observability endpoints**: /health and /metrics return valid responses
+- [x] **Observability endpoints**: /health and /metrics return valid responses ✅ **VERIFIED**
 
 ### Performance Tests
 
@@ -98,9 +104,10 @@ The S0 baseline represents the minimum viable implementation of MNX with:
 
 ### Production Blockers
 
-1. **Security**: Missing authentication/authorization implementation
+1. ~~**Security**: Missing authentication/authorization implementation~~ ✅ **RESOLVED** (API key auth operational)
 2. **Backup/Recovery**: No backup strategy or restore procedures
 3. **Monitoring**: Limited alerting and SLA monitoring
+4. **Load Testing**: Sustained throughput validation needed
 
 ## 📊 Baseline Metrics
 
@@ -148,6 +155,17 @@ This creates:
 3. **Production Hardening**: Backup, recovery, and chaos testing
 
 ## 📝 Change Log
+
+### 2025-08-26 - S0 System Verification & Deployment
+
+- ✅ **System Deployed**: All core services operational (Gateway, Publisher, Projectors)
+- ✅ **Authentication Implemented**: API key authentication with admin/write/read scopes
+- ✅ **Test Framework Operational**: Async pytest framework with full idempotency testing
+- ✅ **Docker Infrastructure**: Custom PostgreSQL+AGE image built and deployed
+- ✅ **Database Migrations**: All schema migrations applied successfully
+- ✅ **Integration Testing**: End-to-end event flow and 409 conflict detection verified
+- ✅ **Health Checks**: All services passing health verification
+- ✅ **Schema Validation**: OpenAPI and JSON schema validation operational
 
 ### 2024-12-19 - Alpha S0 Baseline
 

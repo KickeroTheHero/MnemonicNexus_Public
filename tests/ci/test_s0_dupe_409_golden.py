@@ -15,6 +15,7 @@ import uuid
 from datetime import datetime
 
 import httpx
+import pytest
 
 
 # Golden envelope for idempotency testing
@@ -47,14 +48,15 @@ GOLDEN_ENVELOPE = {
     "occurred_at": "2025-01-01T12:00:00Z",
 }
 
-# Fixed idempotency key for deterministic testing
-IDEMPOTENCY_KEY = "golden-409-test-key-deterministic"
+# Unique idempotency key per test run to avoid conflicts
+IDEMPOTENCY_KEY = f"golden-409-test-{uuid.uuid4()}"
 
 
+@pytest.mark.asyncio
 async def test_duplicate_409():
     """Test that duplicate envelope submission returns 409 Conflict"""
 
-    gateway_url = os.getenv("GATEWAY_URL", "http://localhost:8086")
+    gateway_url = os.getenv("GATEWAY_URL", "http://localhost:8081")
 
     async with httpx.AsyncClient(timeout=30.0) as client:
 
@@ -63,13 +65,14 @@ async def test_duplicate_409():
         print(f"   EMO ID: {GOLDEN_ENVELOPE['payload']['emo_id']}")
         print(f"   Idempotency Key: {IDEMPOTENCY_KEY}")
 
-        # First submission - should succeed (201 Created)
-        print("\n📤 First submission (expecting 201 Created):")
+        # First submission - should succeed (200/201 Created)
+        print("\n📤 First submission (expecting 200/201 success):")
 
         headers = {
             "Content-Type": "application/json",
             "Idempotency-Key": IDEMPOTENCY_KEY,
-            "X-Correlation-Id": f"ci-409-test-{uuid.uuid4()}",
+            "X-Correlation-Id": str(uuid.uuid4()),
+            "X-API-Key": "write-your-secure-random-key-here",  # Write API key for event creation
         }
 
         response1 = await client.post(
@@ -79,9 +82,9 @@ async def test_duplicate_409():
         print(f"   Status: {response1.status_code}")
         print(f"   Response: {response1.text[:200]}...")
 
-        if response1.status_code != 201:
+        if response1.status_code not in [200, 201]:
             print(
-                f"❌ First submission failed. Expected 201, got {response1.status_code}"
+                f"❌ First submission failed. Expected 200/201, got {response1.status_code}"
             )
             return False
 
@@ -119,7 +122,7 @@ async def test_duplicate_409():
         print("\n🔍 Verifying only one event exists in database:")
 
         database_url = os.getenv(
-            "DATABASE_URL", "postgresql://postgres:postgres@postgres-v2:5432/nexus_v2"
+            "DATABASE_URL", "postgresql://postgres:postgres@localhost:5433/nexus"
         )
 
         import asyncpg

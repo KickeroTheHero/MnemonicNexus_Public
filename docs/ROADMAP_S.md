@@ -16,7 +16,6 @@
 - Enhanced semantic search with agent context awareness  
 - Improved correlation ID propagation for agent workflows
 - Advanced monitoring and alerting for agent interactions
-- *Note: Implementation details in planning phase - no schema migrations yet*
 
 ### S1 - Hybrid Search Planner 📋
 - Intelligent query planning across lenses
