@@ -1,7 +1,7 @@
 # MNX (MnemonicNexus) - Alpha S0
 
-[![CI](https://github.com/your-org/mneumonicnexus/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/mneumonicnexus/actions/workflows/ci.yml)
-[![Baseline](https://github.com/your-org/mneumonicnexus/actions/workflows/baseline.yml/badge.svg)](https://github.com/your-org/mneumonicnexus/actions/workflows/baseline.yml)
+[![CI](https://github.com/KickeroTheHero/MnemonicNexus_Public/actions/workflows/ci.yml/badge.svg)](https://github.com/KickeroTheHero/MnemonicNexus_Public/actions/workflows/ci.yml)
+[![Baseline](https://github.com/KickeroTheHero/MnemonicNexus_Public/actions/workflows/baseline.yml/badge.svg)](https://github.com/KickeroTheHero/MnemonicNexus_Public/actions/workflows/baseline.yml)
 [![Security](https://img.shields.io/badge/security-scanned-green.svg)](docs/SECURITY.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
@@ -13,8 +13,8 @@
 
 ```bash
 # Clone and setup
-git clone https://github.com/your-org/mneumonicnexus.git
-cd mneumonicnexus
+git clone https://github.com/KickeroTheHero/MnemonicNexus_Public.git
+cd MnemonicNexus_Public
 
 # Install dependencies
 pip install -r requirements.txt

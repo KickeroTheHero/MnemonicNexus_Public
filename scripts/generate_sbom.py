@@ -179,14 +179,14 @@ def generate_spdx_sbom() -> Dict[str, Any]:
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
         "name": "MnemonicNexus-SBOM",
-        "documentNamespace": f"https://github.com/your-org/mneumonicnexus/sbom/{system_info['git_commit']}",
+        "documentNamespace": f"https://github.com/KickeroTheHero/MnemonicNexus_Public/sbom/{system_info['git_commit']}",
         "creators": ["Tool: generate_sbom.py"],
         "created": system_info["build_time"],
         "packages": [
             {
                 "SPDXID": "SPDXRef-Package-MNX",
                 "name": "MnemonicNexus",
-                "downloadLocation": "https://github.com/your-org/mneumonicnexus",
+                "downloadLocation": "https://github.com/KickeroTheHero/MnemonicNexus_Public",
                 "filesAnalyzed": False,
                 "copyright": "NOASSERTION",
                 "versionInfo": f"alpha-s0-{system_info['git_commit'][:8]}"
